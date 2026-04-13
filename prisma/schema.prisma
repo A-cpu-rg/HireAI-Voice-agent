@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Candidate {
+  id              String            @id @default(uuid())
+  name            String
+  email           String            @unique
+  phone           String
+  role            String
+  experience      Int
+  status          String            @default("pending")
+  score           Int?
+  callId          String?
+  scheduledAt     DateTime?
+  completedAt     DateTime?
+  resumeUrl       String?
+  location        String
+  appliedAt       DateTime          @default(now())
+  avatarColor     String
+  tags            String?           // Stored as JSON string
+  
+  screeningResult ScreeningResult?
+  transcript      TranscriptMessage[]
+  callLogs        CallLog[]
+}
+
+model ScreeningResult {
+  id                  String     @id @default(uuid())
+  candidateId         String     @unique
+  candidate           Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  
+  technicalScore      Int
+  communicationScore  Int
+  problemSolvingScore Int
+  cultureFitScore     Int
+  overallScore        Int
+  
+  strengths           String     // JSON array
+  concerns            String     // JSON array
+  recommendation      String
+  summary             String
+  keySkills           String     // JSON array
+  availability        String
+  salaryExpectation   String
+}
+
+model TranscriptMessage {
+  id          String     @id @default(uuid())
+  candidateId String
+  candidate   Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  role        String     // "agent" | "candidate"
+  text        String
+  timestamp   String
+}
+
+model Job {
+  id          String   @id @default(uuid())
+  title       String
+  department  String
+  location    String
+  type        String
+  openings    Int
+  applicants  Int      @default(0)
+  screened    Int      @default(0)
+  shortlisted Int      @default(0)
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  description String
+  skills      String   // JSON array
+  salaryRange String
+}
+
+model CallLog {
+  id            String    @id @default(uuid()) // Bolna Call ID
+  candidateId   String
+  candidate     Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidateName String
+  role          String
+  duration      String    @default("0m 0s")
+  status        String    @default("in-progress")
+  startedAt     DateTime  @default(now())
+  score         Int?
+  agentId       String
+}
