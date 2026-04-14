@@ -1,9 +1,10 @@
 import { cn } from "../../utils/cn";
 import { CandidateStatus } from "../../types";
 
-const statusConfig: Record<CandidateStatus, { label: string; classes: string; dot: string }> = {
+const statusConfig: Record<string, { label: string; classes: string; dot: string }> = {
   pending: { label: "Pending", classes: "bg-slate-500/10 text-slate-400 border-slate-500/20", dot: "bg-slate-400" },
   scheduled: { label: "Scheduled", classes: "bg-blue-500/10 text-blue-400 border-blue-500/20", dot: "bg-blue-400" },
+  in_progress: { label: "Live Call", classes: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20", dot: "bg-yellow-400 animate-pulse" },
   calling: { label: "Live Call", classes: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20", dot: "bg-yellow-400 animate-pulse" },
   completed: { label: "Completed", classes: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20", dot: "bg-cyan-400" },
   failed: { label: "Failed", classes: "bg-red-500/10 text-red-400 border-red-500/20", dot: "bg-red-400" },
@@ -11,8 +12,8 @@ const statusConfig: Record<CandidateStatus, { label: string; classes: string; do
   rejected: { label: "Rejected", classes: "bg-rose-500/10 text-rose-400 border-rose-500/20", dot: "bg-rose-400" },
 };
 
-export function StatusBadge({ status }: { status: CandidateStatus }) {
-  const config = statusConfig[status];
+export function StatusBadge({ status }: { status: string }) {
+  const config = statusConfig[status] || statusConfig.pending;
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border", config.classes)}>
       <span className={cn("w-1.5 h-1.5 rounded-full", config.dot)} />

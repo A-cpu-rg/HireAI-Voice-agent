@@ -1,11 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Phone, CheckCircle, XCircle, Clock, Loader, Search } from "lucide-react";
-import { useApp } from "@/context/AppContext";
 import Header from "@/components/Layout/Header";
 import { cn } from "@/utils/cn";
 import { ScoreBadge } from "@/components/UI/Badge";
-import { useState } from "react";
 import { format } from "date-fns";
 
 const statusConfig = {
@@ -16,13 +15,24 @@ const statusConfig = {
 };
 
 export default function CallLogs() {
-  const { callLogs, candidates } = useApp();
+  const [callLogs, setCallLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    fetch('/api/calls').then(res => res.json()).then(data => {
+      setCallLogs(data.data || []);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+  }, []);
 
   const filtered = callLogs.filter(
     (l) =>
-      l.candidateName.toLowerCase().includes(search.toLowerCase()) ||
-      l.role.toLowerCase().includes(search.toLowerCase())
+      l.candidateName?.toLowerCase().includes(search.toLowerCase()) ||
+      l.role?.toLowerCase().includes(search.toLowerCase())
   );
 
   const successCount = callLogs.filter((l) => l.status === "success").length;
@@ -75,23 +85,34 @@ export default function CallLogs() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
-              {filtered.map((log) => {
-                const sc = statusConfig[log.status];
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-white/50">
+                    <Loader className="w-6 h-6 animate-spin mx-auto mb-2 opacity-50" />
+                    Loading...
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-white/30">
+                     <Phone className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                     <p className="text-sm">No call logs found</p>
+                  </td>
+                </tr>
+              ) : filtered.map((log) => {
+                const mapStatus = log.status === 'in_progress' ? 'in-progress' : log.status; // normalise db enum to ui enum
+                const sc = statusConfig[mapStatus as keyof typeof statusConfig] || statusConfig['failed'];
                 const StatusIcon = sc.icon;
-                const candidate = candidates.find((c) => c.id === log.candidateId);
 
                 return (
                   <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        {candidate && (
-                          <div
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-                            style={{ background: candidate.avatarColor }}
-                          >
-                            {candidate.name.split(" ").map((n) => n[0]).join("")}
-                          </div>
-                        )}
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 bg-blue-500"
+                        >
+                          {log.candidateName ? log.candidateName.split(" ").map((n: string) => n[0]).join("") : "?"}
+                        </div>
                         <div>
                           <p className="text-sm font-medium text-white">{log.candidateName}</p>
                         </div>
@@ -102,7 +123,7 @@ export default function CallLogs() {
                     </td>
                     <td className="px-4 py-3.5">
                       <div className={cn("inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full", sc.bg, sc.color)}>
-                        <StatusIcon className={cn("w-3 h-3", log.status === "in-progress" && "animate-spin")} />
+                        <StatusIcon className={cn("w-3 h-3", mapStatus === "in-progress" && "animate-spin")} />
                         {sc.label}
                       </div>
                     </td>
@@ -128,12 +149,6 @@ export default function CallLogs() {
               })}
             </tbody>
           </table>
-          {filtered.length === 0 && (
-            <div className="text-center py-12 text-white/30">
-              <Phone className="w-8 h-8 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No call logs found</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

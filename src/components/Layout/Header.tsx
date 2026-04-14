@@ -1,6 +1,7 @@
 import { Bell, Search, Wifi, WifiOff } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { cn } from "../../utils/cn";
+import { useState, useEffect } from "react";
 
 interface HeaderProps {
   title: string;
@@ -8,8 +9,56 @@ interface HeaderProps {
 }
 
 export default function Header({ title, subtitle }: HeaderProps) {
-  const { isConfigured, candidates, sidebarOpen } = useApp();
-  const activeCall = candidates.find((c) => c.status === "calling");
+  const { isConfigured, setIsConfigured, setBolnaConfig, sidebarOpen } = useApp();
+  const [activeCall, setActiveCall] = useState<any>(null);
+
+  useEffect(() => {
+    // Initial fetch for config
+    const initConfig = async () => {
+      try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.isNewUser) {
+            // User was just created, not configured
+             setIsConfigured(false);
+          } else {
+             const configured = Boolean(data.hasKey && data.hasAgent);
+             setIsConfigured(configured);
+             if (configured) {
+                setBolnaConfig({ apiKey: data.apiKey, agentId: data.agentId, webhookUrl: '' });
+             }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load config", e);
+      }
+    };
+    initConfig();
+  }, [setIsConfigured, setBolnaConfig]);
+
+  useEffect(() => {
+    // Poll for active calls
+    const fetchActiveCall = async () => {
+       try {
+         const res = await fetch('/api/calls?status=in-progress');
+         if (res.ok) {
+            const data = await res.json();
+            if (data.data?.length > 0) {
+               setActiveCall(data.data[0]);
+            } else {
+               setActiveCall(null);
+            }
+         }
+       } catch (e) {
+         // silently fail
+       }
+    };
+
+    fetchActiveCall();
+    const interval = setInterval(fetchActiveCall, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <header
@@ -30,7 +79,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
           </span>
-          <span className="text-xs text-green-400 font-medium">Screening {activeCall.name}</span>
+          <span className="text-xs text-green-400 font-medium">Screening {activeCall.candidateName}</span>
         </div>
       )}
 

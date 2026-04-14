@@ -2,7 +2,8 @@ import { prisma } from '@/lib/prisma';
 
 export const BolnaService = {
   /**
-   * Proxies a call to Bolna and creates optimistic database records.
+   * Calls Bolna API to initiate an outbound call.
+   * Returns the call_id. DB operations are done by the caller (the route handler).
    */
   async triggerOutboundCall(apiKey: string, agentId: string, candidateId: string) {
     const candidate = await prisma.candidate.findUnique({
@@ -34,27 +35,7 @@ export const BolnaService = {
     }
 
     const data = await bolnaResponse.json();
-    const callId = data.call_id;
-
-    // Use transaction to ensure both records are created
-    await prisma.$transaction([
-      prisma.candidate.update({
-        where: { id: candidate.id },
-        data: { status: "calling", callId: callId }
-      }),
-      prisma.callLog.create({
-        data: {
-          id: callId,
-          candidateId: candidate.id,
-          candidateName: candidate.name,
-          role: candidate.role,
-          status: "in-progress",
-          agentId: agentId,
-        }
-      })
-    ]);
-
-    return { call_id: callId };
+    return { call_id: data.call_id };
   },
 
   /**
@@ -82,9 +63,9 @@ export const BolnaService = {
     const recommendation = overall >= 80 ? "Shortlist" : overall >= 65 ? "Hold" : "Reject";
     const status = recommendation === "Shortlist" ? "shortlisted" : recommendation === "Reject" ? "rejected" : "completed";
 
-    // 1. Array wrapping transcript messages so we can nest them inside Prisma queries
+    // Array wrapping transcript messages so we can nest them inside Prisma queries
     const transcriptArray = payload.data?.transcript || payload.transcript || [];
-    const transcriptData = Array.isArray(transcriptArray) ? transcriptArray.map(t => ({
+    const transcriptData = Array.isArray(transcriptArray) ? transcriptArray.map((t: any) => ({
       candidateId: callLog.candidateId,
       role: String(t.role).toLowerCase().includes('user') ? 'candidate' : 'agent',
       text: t.text || t.content || "",
@@ -110,7 +91,20 @@ export const BolnaService = {
 
       await tx.screeningResult.upsert({
         where: { candidateId: callLog.candidateId },
-        update: {},
+        update: {
+          technicalScore: technical,
+          communicationScore: communication,
+          problemSolvingScore: problemSolving,
+          cultureFitScore: cultureFit,
+          overallScore: overall,
+          strengths: JSON.stringify(extraction.strengths || ["Good potential", "Strong communication basis"]),
+          concerns: JSON.stringify(extraction.concerns || ["Needs more specialized review"]),
+          recommendation,
+          summary: extraction.summary || "Call completed. Evaluated via AI.",
+          keySkills: JSON.stringify(extraction.tech_stack ? (Array.isArray(extraction.tech_stack) ? extraction.tech_stack : extraction.tech_stack.split(',')) : []),
+          availability: extraction.notice_period || "Unknown",
+          salaryExpectation: extraction.salary_expectation || "Disclosed in call",
+        },
         create: {
           candidateId: callLog.candidateId,
           technicalScore: technical,

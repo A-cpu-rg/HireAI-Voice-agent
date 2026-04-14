@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { X } from "lucide-react";
-import { useApp } from "../../context/AppContext";
+import { X, Loader } from "lucide-react";
 import { JobRole } from "../../types";
+import toast from "react-hot-toast";
 
 const roles: JobRole[] = [
   "Full-Stack Engineer",
@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default function AddCandidateModal({ onClose }: Props) {
-  const { addCandidate } = useApp();
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -29,14 +29,39 @@ export default function AddCandidateModal({ onClose }: Props) {
     tags: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addCandidate({
+    setLoading(true);
+    
+    // Pick an avatar color locally
+    const colors = ["#ef4444", "#f97316", "#f59e0b", "#84cc16", "#22c55e", "#06b6d4", "#3b82f6", "#8b5cf6", "#d946ef"];
+    const avatarColor = colors[Math.floor(Math.random() * colors.length)];
+
+    const payload = {
       ...form,
       status: "pending",
       tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
-    });
-    onClose();
+      avatarColor,
+    };
+
+    try {
+      const res = await fetch("/api/candidates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        toast.success(`✅ ${form.name} added successfully!`);
+        onClose();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to add candidate");
+      }
+    } catch (error) {
+      toast.error("Failed to add candidate. Server error.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -142,9 +167,11 @@ export default function AddCandidateModal({ onClose }: Props) {
             </button>
             <button
               type="submit"
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
+              disabled={loading}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Add & Queue Screening
+              {loading && <Loader className="w-4 h-4 animate-spin" />}
+              Add Candidate
             </button>
           </div>
         </form>

@@ -1,7 +1,7 @@
 export type CandidateStatus =
   | "pending"
   | "scheduled"
-  | "calling"
+  | "in_progress"
   | "completed"
   | "failed"
   | "shortlisted"

@@ -1,31 +1,74 @@
 "use client";
 
-import { useState } from "react";
-import { Key, Webhook, Bot, Save, Eye, EyeOff, ExternalLink, CheckCircle, AlertCircle, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Key, Webhook, Bot, Save, Eye, EyeOff, ExternalLink, CheckCircle, AlertCircle, Zap, Loader } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import Header from "@/components/Layout/Header";
 import { cn } from "@/utils/cn";
+import toast from "react-hot-toast";
 
 export default function Settings() {
-  const { bolnaConfig, setBolnaConfig, isConfigured } = useApp();
+  const { bolnaConfig, setBolnaConfig, isConfigured, setIsConfigured } = useApp();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
   const [form, setForm] = useState({
-    apiKey: bolnaConfig.apiKey || "",
-    agentId: bolnaConfig.agentId || "",
-    webhookUrl: bolnaConfig.webhookUrl || "",
+    apiKey: "",
+    agentId: "",
+    webhookUrl: "",
   });
+
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetch('/api/config')
+      .then(r => r.json())
+      .then(data => {
+         if (data.isNewUser) {
+           setIsConfigured(false);
+         } else {
+           const configured = Boolean(data.hasKey && data.hasAgent);
+           setIsConfigured(configured);
+           if (data.apiKey || data.agentId) {
+             setForm({ apiKey: data.apiKey || "", agentId: data.agentId || "", webhookUrl: "" });
+             setBolnaConfig({ apiKey: data.apiKey, agentId: data.agentId, webhookUrl: "" });
+           }
+         }
+         setLoading(false);
+      }).catch(err => {
+         console.error(err);
+         setLoading(false);
+      });
+  }, [setBolnaConfig, setIsConfigured]);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBolnaConfig(form);
+    setSaving(true);
+    try {
+      const res = await fetch('/api/config', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      if (res.ok) {
+        setBolnaConfig(form);
+        setIsConfigured(Boolean(form.apiKey && form.agentId));
+        toast.success("Settings saved remotely");
+      }
+    } catch {
+       toast.error("Failed to save settings");
+    } finally {
+       setSaving(false);
+    }
   };
 
   const handleTest = async () => {
     setTesting(true);
     setTestResult(null);
     try {
+      // Direct call to Bolna to ensure the agent ID and Key actually pair
       const res = await fetch(`https://api.bolna.ai/v2/agent/${form.agentId}`, {
         headers: { Authorization: `Bearer ${form.apiKey}` },
       });
@@ -41,6 +84,13 @@ export default function Settings() {
       <Header title="Settings" subtitle="Configure Bolna API integration and preferences" />
 
       <div className="pt-16 p-6 space-y-6 max-w-3xl">
+        {loading ? (
+             <div className="text-center py-20 text-white/50">
+               <Loader className="w-8 h-8 animate-spin mx-auto mb-4 opacity-50" />
+               <p>Loading Preferences...</p>
+             </div>
+        ) : (
+          <>
         {/* Status Banner */}
         <div className={cn(
           "flex items-center gap-3 rounded-2xl p-4 border",
@@ -112,28 +162,14 @@ export default function Settings() {
             <p className="text-xs text-white/30 mt-1.5">Create an agent on the Bolna platform and paste its UUID here</p>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-white/50 mb-1.5 flex items-center gap-1.5">
-              <Webhook className="w-3.5 h-3.5" />
-              Webhook URL (optional)
-            </label>
-            <input
-              type="url"
-              value={form.webhookUrl}
-              onChange={(e) => setForm({ ...form, webhookUrl: e.target.value })}
-              placeholder="https://your-backend.com/api/webhook/bolna"
-              className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-indigo-500/50"
-            />
-            <p className="text-xs text-white/30 mt-1.5">Bolna will POST call results to this URL when screening is complete</p>
-          </div>
-
           <div className="flex items-center gap-3 pt-2">
             <button
               type="submit"
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
+              disabled={saving}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
             >
               <Save className="w-4 h-4" />
-              Save Configuration
+              {saving ? "Saving..." : "Save Configuration"}
             </button>
             {form.apiKey && form.agentId && (
               <button
@@ -225,17 +261,8 @@ export default function Settings() {
             ))}
           </ol>
         </div>
-
-        {/* About */}
-        <div className="bg-gradient-to-br from-indigo-600/10 to-violet-600/10 border border-indigo-500/20 rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-white mb-2">📋 About this Assignment</h3>
-          <p className="text-xs text-white/50 leading-relaxed">
-            <strong className="text-white/70">Use Case:</strong> AI-powered candidate recruitment screening for enterprise HR teams.<br />
-            <strong className="text-white/70">Problem:</strong> Manual phone screening is slow (3+ hrs/candidate), expensive (₹450/call), and inconsistent.<br />
-            <strong className="text-white/70">Solution:</strong> Bolna Voice AI agent "Aria" conducts 5-min structured calls, extracts scores, and outputs actionable hiring recommendations.<br />
-            <strong className="text-white/70">Outcome Metric:</strong> 37× faster screening, 97% cost reduction, 95% call completion rate.
-          </p>
-        </div>
+        </>
+      )}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useApp } from "../../context/AppContext";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard, Users, Briefcase, Phone, Settings, Mic2, ChevronLeft, ChevronRight,
   Zap, BarChart3, BookOpen
@@ -19,11 +20,42 @@ const navItems = [
 ];
 
 export default function Sidebar() {
-  const { sidebarOpen, setSidebarOpen, candidates, callLogs } = useApp();
+  const { sidebarOpen, setSidebarOpen } = useApp();
   const pathname = usePathname();
 
-  const activeCallsCount = callLogs.filter((c) => c.status === "in-progress").length;
-  const pendingCount = candidates.filter((c) => c.status === "pending").length;
+  const [pendingCount, setPendingCount] = useState(0);
+  const [activeCallsCount, setActiveCallsCount] = useState(0);
+
+  useEffect(() => {
+    // Polling logic for badges
+    let interval: any;
+    
+    const fetchCounts = async () => {
+      try {
+        const [candRes, callRes] = await Promise.all([
+          fetch('/api/candidates?status=pending'),
+          fetch('/api/calls?status=in-progress')
+        ]);
+        
+        if (candRes.ok) {
+          const cands = await candRes.json();
+          setPendingCount(cands.data?.length || 0);
+        }
+        
+        if (callRes.ok) {
+          const calls = await callRes.json();
+          setActiveCallsCount(calls.data?.length || 0);
+        }
+      } catch (e) {
+        // silently fail on polling
+      }
+    };
+
+    fetchCounts();
+    interval = setInterval(fetchCounts, 10000); // 10s poll
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <aside

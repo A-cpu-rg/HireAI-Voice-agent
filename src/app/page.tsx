@@ -1,14 +1,13 @@
 "use client";
 
-import { Users, Phone, CheckCircle, TrendingUp, Clock, Zap, PhoneCall, Star } from "lucide-react";
+import { Users, Phone, CheckCircle, TrendingUp, Clock, Zap, PhoneCall, Star, Loader } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { useApp } from "@/context/AppContext";
 import Header from "@/components/Layout/Header";
 import StatCard from "@/components/UI/StatCard";
 import { StatusBadge, ScoreBadge } from "@/components/UI/Badge";
-// Removed mock data
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
+import { useState, useEffect } from "react";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -24,11 +23,26 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     );
   }
   return null;
-};
+}
 
 export default function Dashboard() {
-  const { candidates, callLogs, isConfigured } = useApp();
+  const { isConfigured } = useApp();
   const router = useRouter();
+
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [callLogs, setCallLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/candidates').then(res => res.json()),
+      fetch('/api/calls').then(res => res.json())
+    ]).then(([candData, callData]) => {
+      setCandidates(candData.data || []);
+      setCallLogs(callData.data || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
 
   const total = candidates.length;
   const screened = candidates.filter((c) => c.status !== "pending" && c.status !== "scheduled").length;
@@ -72,7 +86,7 @@ export default function Dashboard() {
 
       <div className="pt-16 p-6 space-y-6">
         {/* Config Warning */}
-        {!isConfigured && (
+        {!isConfigured && !loading && (
           <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4">
             <Zap className="w-5 h-5 text-amber-400 flex-shrink-0" />
             <div className="flex-1">
@@ -88,6 +102,13 @@ export default function Dashboard() {
           </div>
         )}
 
+        {loading ? (
+             <div className="text-center py-20 text-white/50">
+               <Loader className="w-8 h-8 animate-spin mx-auto mb-4 opacity-50" />
+               <p>Loading Dashboard...</p>
+             </div>
+        ) : (
+            <>
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard label="Total Candidates" value={total} icon={Users} color="indigo" trend={{ value: 12, label: "vs last week" }} />
@@ -169,7 +190,7 @@ export default function Dashboard() {
                 <div key={c.id} className="flex items-center gap-3 group cursor-pointer" onClick={() => router.push(`/candidates/${c.id}`)}>
                   <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
                     style={{ background: c.avatarColor }}>
-                    {c.name.split(" ").map((n) => n[0]).join("")}
+                    {c.name.split(" ").map((n: string) => n[0]).join("")}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate group-hover:text-indigo-300 transition-colors">{c.name}</p>
@@ -198,7 +219,7 @@ export default function Dashboard() {
                   }`}>{i + 1}</div>
                   <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
                     style={{ background: c.avatarColor }}>
-                    {c.name.split(" ").map((n) => n[0]).join("")}
+                    {c.name.split(" ").map((n: string) => n[0]).join("")}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate group-hover:text-indigo-300 transition-colors">{c.name}</p>
@@ -232,6 +253,8 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

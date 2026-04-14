@@ -1,10 +1,9 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
-import { useApp } from "@/context/AppContext";
 import Header from "@/components/Layout/Header";
-// Dynamic logic replaces mock data
-import { TrendingUp, Users, Clock, Zap } from "lucide-react";
+import { TrendingUp, Users, Clock, Zap, Loader } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#14b8a6", "#f59e0b", "#10b981"];
 
@@ -23,7 +22,26 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function Analytics() {
-  const { candidates, callLogs, jobs } = useApp();
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [callLogs, setCallLogs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/candidates').then(res => res.json()),
+      fetch('/api/calls').then(res => res.json()),
+      fetch('/api/jobs').then(res => res.json())
+    ]).then(([candData, callData, jobData]) => {
+      setCandidates(candData.data || []);
+      setCallLogs(callData.data || []);
+      setJobs(jobData || []); // jobs wasn't wrapped in data
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+  }, []);
 
   const roleDistribution = jobs.map((j, i) => ({
     name: j.title.split(" ").slice(0, 2).join(" "),
@@ -75,6 +93,13 @@ export default function Analytics() {
       <Header title="Analytics" subtitle="AI screening performance metrics and insights" />
 
       <div className="pt-16 p-6 space-y-6">
+        {loading ? (
+             <div className="text-center py-20 text-white/50">
+               <Loader className="w-8 h-8 animate-spin mx-auto mb-4 opacity-50" />
+               <p>Loading Analytics...</p>
+             </div>
+        ) : (
+          <>
         {/* KPI Row */}
         <div className="grid grid-cols-4 gap-4">
           {kpiMetrics.map((m) => (
@@ -133,8 +158,8 @@ export default function Analytics() {
               {statusPie.map((d, i) => (
                 <div key={d.name} className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5 text-white/50">
-                    <span className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
-                    {d.name}
+                     <span className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+                     {d.name}
                   </span>
                   <span className="text-white/70 font-medium">{d.value}</span>
                 </div>
@@ -204,6 +229,8 @@ export default function Analytics() {
             </div>
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

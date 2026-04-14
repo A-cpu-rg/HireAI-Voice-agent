@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Filter, Phone, Plus, ChevronDown, SlidersHorizontal } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { Search, Filter, Phone, Plus, ChevronDown, Loader } from "lucide-react";
 import Header from "@/components/Layout/Header";
 import { StatusBadge, ScoreBadge, TagBadge } from "@/components/UI/Badge";
-import { CandidateStatus, JobRole } from "@/types";
+import { CandidateStatus, JobRole, Candidate } from "@/types";
 import { cn } from "@/utils/cn";
 import AddCandidateModal from "@/components/Candidates/AddCandidateModal";
+import toast from "react-hot-toast";
+import { useApp } from "@/context/AppContext";
 
 const statusFilters: { label: string; value: CandidateStatus | "all" }[] = [
   { label: "All", value: "all" },
@@ -20,22 +21,82 @@ const statusFilters: { label: string; value: CandidateStatus | "all" }[] = [
 ];
 
 export default function Candidates() {
-  const { candidates, initiateCall, activeCallId } = useApp();
   const router = useRouter();
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { activeCallId, setActiveCallId, isConfigured } = useApp();
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<CandidateStatus | "all">("all");
   const [roleFilter, setRoleFilter] = useState<JobRole | "all">("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [sortBy, setSortBy] = useState<"score" | "date" | "name">("date");
 
+  useEffect(() => {
+    fetchCandidates();
+  }, [statusFilter]);
+
+  const fetchCandidates = async () => {
+    try {
+      setLoading(true);
+      const url = statusFilter === "all" ? "/api/candidates" : `/api/candidates?status=${statusFilter}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const json = await res.json();
+        setCandidates(json.data || []);
+      }
+    } catch (e) {
+      toast.error("Failed to load candidates");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initiateCall = async (candidateId: string) => {
+    if (!isConfigured) {
+      toast.error("Please configure your Bolna connection in Settings first.", { icon: "⚠️" });
+      return;
+    }
+    
+    // Optimistic UI Update
+    setCandidates((prev) =>
+      prev.map((c) => (c.id === candidateId ? { ...c, status: "in_progress" } as any : c))
+    );
+    setActiveCallId(candidateId);
+    
+    const toastId = toast.loading("Dialing candidate via Bolna...");
+
+    try {
+      const response = await fetch("/api/bolna/call", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidateId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error);
+      }
+
+      toast.success("Call initiated successfully!", { id: toastId });
+      fetchCandidates(); // Refresh to catch status update
+    } catch (err: any) {
+      toast.error(err.message || "Failed to start call", { id: toastId });
+       // Revert Optimistic Update
+       setCandidates((prev) =>
+         prev.map((c) => (c.id === candidateId ? { ...c, status: "pending" } as any : c))
+       );
+       setActiveCallId(null);
+    }
+  };
+
   const filtered = candidates
     .filter((c) => {
       const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
         c.email.toLowerCase().includes(search.toLowerCase()) ||
         c.role.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = statusFilter === "all" || c.status === statusFilter;
       const matchRole = roleFilter === "all" || c.role === roleFilter;
-      return matchSearch && matchStatus && matchRole;
+      return matchSearch && matchRole;
     })
     .sort((a, b) => {
       if (sortBy === "score") return (b.score || 0) - (a.score || 0);
@@ -47,7 +108,7 @@ export default function Candidates() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header title="Candidates" subtitle={`${candidates.length} total candidates · ${candidates.filter(c => c.status === 'shortlisted').length} shortlisted`} />
+      <Header title="Candidates" subtitle={`${candidates.length} total candidates loaded...`} />
 
       <div className="pt-16 p-6 space-y-5">
         {/* Toolbar */}
@@ -99,10 +160,9 @@ export default function Candidates() {
           </button>
         </div>
 
-        {/* Status pills */}
+        {/* Status pills - Using UI visual only since backend filter works too */}
         <div className="flex items-center gap-2 flex-wrap">
           {statusFilters.map((s) => {
-            const count = s.value === "all" ? candidates.length : candidates.filter(c => c.status === s.value).length;
             return (
               <button
                 key={s.value}
@@ -115,9 +175,6 @@ export default function Candidates() {
                 )}
               >
                 {s.label}
-                <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full",
-                  statusFilter === s.value ? "bg-indigo-500 text-white" : "bg-white/10 text-white/40"
-                )}>{count}</span>
               </button>
             );
           })}
@@ -140,7 +197,21 @@ export default function Candidates() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
-              {filtered.map((c) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-white/50">
+                    <Loader className="w-6 h-6 animate-spin mx-auto mb-2 opacity-50" />
+                    Loading candidates...
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                 <tr>
+                  <td colSpan={8} className="py-16 text-center text-white/30">
+                     <Filter className="w-8 h-8 mx-auto mb-3 opacity-40" />
+                     <p className="text-sm">No candidates match your filters</p>
+                  </td>
+                 </tr>
+              ) : filtered.map((c) => (
                 <tr
                   key={c.id}
                   className="hover:bg-white/[0.02] transition-colors group cursor-pointer"
@@ -212,16 +283,13 @@ export default function Candidates() {
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && (
-            <div className="text-center py-16 text-white/30">
-              <Filter className="w-8 h-8 mx-auto mb-3 opacity-40" />
-              <p className="text-sm">No candidates match your filters</p>
-            </div>
-          )}
         </div>
       </div>
 
-      {showAddModal && <AddCandidateModal onClose={() => setShowAddModal(false)} />}
+      {showAddModal && <AddCandidateModal onClose={() => {
+        setShowAddModal(false);
+        fetchCandidates();
+      }} />}
     </div>
   );
 }

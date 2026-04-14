@@ -3,18 +3,30 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String      @id @default(uuid())
+  email      String      @unique
+  name       String?
+  apiKey     String?
+  agentId    String?
+  candidates Candidate[]
+  callLogs   CallLog[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
 
 model Candidate {
   id              String            @id @default(uuid())
   name            String
-  email           String            @unique
+  email           String
   phone           String
   role            String
   experience      Int
-  status          String            @default("pending")
+  status          String            @default("pending") // pending, scheduled, in_progress, completed, shortlisted, rejected
   score           Int?
   callId          String?
   scheduledAt     DateTime?
@@ -28,6 +40,12 @@ model Candidate {
   screeningResult ScreeningResult?
   transcript      TranscriptMessage[]
   callLogs        CallLog[]
+  
+  // Multitenancy
+  user            User              @relation(fields: [userId], references: [id])
+  userId          String
+  // we do not want email uniqueness to cross tenants, uniqueness can be (email, userId) combo.
+  @@unique([email, userId])
 }
 
 model ScreeningResult {
@@ -74,6 +92,9 @@ model Job {
   description String
   skills      String   // JSON array
   salaryRange String
+  
+  // A Job should probably belong to a User, but keeping simple for now? 
+  // Let's add userId if needed later.
 }
 
 model CallLog {
@@ -87,4 +108,8 @@ model CallLog {
   startedAt     DateTime  @default(now())
   score         Int?
   agentId       String
+  
+  // Multitenancy
+  user          User      @relation(fields: [userId], references: [id])
+  userId        String
 }
