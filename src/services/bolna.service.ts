@@ -61,7 +61,6 @@ export const BolnaService = {
     const overall = Math.round((technical + communication + problemSolving + cultureFit) / 4);
     
     const recommendation = overall >= 80 ? "Shortlist" : overall >= 65 ? "Hold" : "Reject";
-    const status = recommendation === "Shortlist" ? "shortlisted" : recommendation === "Reject" ? "rejected" : "completed";
 
     // Array wrapping transcript messages so we can nest them inside Prisma queries
     const transcriptArray = payload.data?.transcript || payload.transcript || [];
@@ -77,13 +76,13 @@ export const BolnaService = {
     await prisma.$transaction(async (tx: any) => {
       await tx.candidate.update({
         where: { id: callLog.candidateId },
-        data: { status, score: overall, completedAt: new Date() }
+        data: { callStatus: "completed", score: overall, completedAt: new Date() }
       });
 
       await tx.callLog.update({
         where: { id: callId },
         data: {
-          status: "success",
+          status: "completed",
           score: overall,
           duration: payload.data?.duration || "5m 2s"
         }

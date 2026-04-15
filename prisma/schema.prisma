@@ -11,6 +11,7 @@ model User {
   id         String      @id @default(uuid())
   email      String      @unique
   name       String?
+  passwordHash String?
   apiKey     String?
   agentId    String?
   candidates Candidate[]
@@ -26,7 +27,9 @@ model Candidate {
   phone           String
   role            String
   experience      Int
-  status          String            @default("pending") // pending, scheduled, in_progress, completed, shortlisted, rejected
+  status          String?
+  callStatus      String            @default("pending") // pending, calling, processing, completed, failed
+  decisionStatus  String            @default("undecided") // undecided, shortlisted, rejected
   score           Int?
   callId          String?
   scheduledAt     DateTime?
@@ -36,10 +39,13 @@ model Candidate {
   appliedAt       DateTime          @default(now())
   avatarColor     String
   tags            String?           // Stored as JSON string
+  isDemo          Boolean           @default(false)
+  jobId           String?
   
   screeningResult ScreeningResult?
   transcript      TranscriptMessage[]
   callLogs        CallLog[]
+  job             Job?              @relation(fields: [jobId], references: [id], onDelete: SetNull)
   
   // Multitenancy
   user            User              @relation(fields: [userId], references: [id])
@@ -92,6 +98,7 @@ model Job {
   description String
   skills      String   // JSON array
   salaryRange String
+  candidates  Candidate[]
   
   // A Job should probably belong to a User, but keeping simple for now? 
   // Let's add userId if needed later.
@@ -104,7 +111,7 @@ model CallLog {
   candidateName String
   role          String
   duration      String    @default("0m 0s")
-  status        String    @default("in-progress")
+  status        String    @default("calling") // pending, calling, processing, completed, failed
   startedAt     DateTime  @default(now())
   score         Int?
   agentId       String

@@ -98,7 +98,7 @@ const response = await fetch('https://api.bolna.ai/call', {
     agent_id: 'YOUR_AGENT_ID',
     recipient_phone_number: '+919876543210',
     user_data: {
-      candidate_name: 'Priya Sharma',
+      candidate_name: 'Abhishek Meena',
       role: 'Full-Stack Engineer',
       experience: '4 years'
     }

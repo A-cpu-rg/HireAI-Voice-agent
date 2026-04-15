@@ -2,6 +2,7 @@
 
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/utils/cn";
+import { usePathname } from "next/navigation";
 
 export default function LayoutClientWrapper({
   children,
@@ -9,6 +10,11 @@ export default function LayoutClientWrapper({
   children: React.ReactNode;
 }) {
   const { sidebarOpen } = useApp();
+  const pathname = usePathname();
+
+  if (pathname === "/login") {
+    return <main className="min-h-screen">{children}</main>;
+  }
 
   return (
     <main

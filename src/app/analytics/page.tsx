@@ -52,11 +52,11 @@ export default function Analytics() {
   }));
 
   const statusPie = [
-    { name: "Shortlisted", value: candidates.filter(c => c.status === "shortlisted").length },
-    { name: "Rejected", value: candidates.filter(c => c.status === "rejected").length },
-    { name: "Completed", value: candidates.filter(c => c.status === "completed").length },
-    { name: "Pending", value: candidates.filter(c => c.status === "pending").length },
-    { name: "Scheduled", value: candidates.filter(c => c.status === "scheduled").length },
+    { name: "Shortlisted", value: candidates.filter(c => c.decisionStatus === "shortlisted").length },
+    { name: "Rejected", value: candidates.filter(c => c.decisionStatus === "rejected").length },
+    { name: "Completed", value: candidates.filter(c => c.callStatus === "completed").length },
+    { name: "Pending", value: candidates.filter(c => c.callStatus === "pending").length },
+    { name: "Processing", value: candidates.filter(c => c.callStatus === "processing").length },
   ].filter(d => d.value > 0);
 
   const scoreDistribution = [
@@ -71,7 +71,7 @@ export default function Analytics() {
     { month: "Oct", calls: 45, screened: 40, shortlisted: 12 },
     { month: "Nov", calls: 78, screened: 65, shortlisted: 20 },
     { month: "Dec", calls: 92, screened: 80, shortlisted: 28 },
-    { month: "Jan", calls: callLogs.length || 121, screened: candidates.length || 98, shortlisted: candidates.filter(c => c.status === "shortlisted").length || 35 },
+    { month: "Jan", calls: callLogs.length || 121, screened: candidates.filter(c => c.callStatus === "completed").length || 98, shortlisted: candidates.filter(c => c.decisionStatus === "shortlisted").length || 35 },
   ];
 
   const kpiMetrics = [

@@ -10,9 +10,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing candidate ID' }, { status: 400 });
     }
 
-    // Find the latest call for this candidate that is 'in-progress'
+    // Find the latest call for this candidate that is still active.
     const callLog = await prisma.callLog.findFirst({
-        where: { candidateId, status: "in-progress" },
+        where: { candidateId, status: { in: ["calling", "processing"] } },
         orderBy: { startedAt: "desc" }
     });
 

@@ -1,42 +1,91 @@
-import { cookies } from 'next/headers';
-import { prisma } from './prisma';
+import { cookies } from "next/headers";
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
+import { prisma } from "./prisma";
 
-/**
- * MOCK AUTHENTICATION
- * This is a placeholder for a real authentication system (like NextAuth or Clerk).
- * It uses a cookie to store a session token (mock user ID).
- */
+const SESSION_COOKIE = "hireai_session";
+const SESSION_SECRET = process.env.AUTH_SECRET || "dev-hireai-session-secret";
+
+function hashValue(value: string) {
+  return createHmac("sha256", SESSION_SECRET).update(value).digest("hex");
+}
+
+function encodeSession(userId: string) {
+  const nonce = randomBytes(8).toString("hex");
+  const payload = `${userId}.${nonce}`;
+  const signature = hashValue(payload);
+  return `${payload}.${signature}`;
+}
+
+function decodeSession(token: string) {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+
+  const [userId, nonce, signature] = parts;
+  const payload = `${userId}.${nonce}`;
+  const expectedSignature = hashValue(payload);
+
+  try {
+    const valid = timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+    return valid ? userId : null;
+  } catch {
+    return null;
+  }
+}
+
+export function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+export function verifyPassword(password: string, passwordHash: string) {
+  const [salt, storedHash] = passwordHash.split(":");
+  if (!salt || !storedHash) return false;
+
+  const derivedHash = scryptSync(password, salt, 64).toString("hex");
+
+  try {
+    return timingSafeEqual(Buffer.from(storedHash), Buffer.from(derivedHash));
+  } catch {
+    return false;
+  }
+}
+
 export async function getSessionUser() {
   const cookieStore = await cookies();
-  const sessionId = cookieStore.get('mock_session_id')?.value;
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
 
-  if (!sessionId) {
+  if (!token) {
+    return null;
+  }
+
+  const userId = decodeSession(token);
+  if (!userId) {
     return null;
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: sessionId },
+    return await prisma.user.findUnique({
+      where: { id: userId },
     });
-    return user;
   } catch (error) {
     console.error("Auth error:", error);
     return null;
   }
 }
 
-export async function loginMockUser(userId: string) {
+export async function loginUser(userId: string) {
   const cookieStore = await cookies();
-  // Using max age 30 days
-  cookieStore.set('mock_session_id', userId, {
+  cookieStore.set(SESSION_COOKIE, encodeSession(userId), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 30 * 24 * 60 * 60 
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    sameSite: "lax",
+    maxAge: 30 * 24 * 60 * 60,
   });
 }
 
-export async function logoutMockUser() {
+export async function logoutUser() {
   const cookieStore = await cookies();
-  cookieStore.delete('mock_session_id');
+  cookieStore.delete(SESSION_COOKIE);
 }

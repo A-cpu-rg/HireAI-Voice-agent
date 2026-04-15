@@ -8,11 +8,15 @@ export async function GET(req: Request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
-    const status = searchParams.get('status');
+    const callStatus = searchParams.get('callStatus') || searchParams.get('status');
+    const decisionStatus = searchParams.get('decisionStatus');
 
     const whereClause: any = { userId: user.id };
-    if (status && status !== 'all') {
-      whereClause.status = status;
+    if (callStatus && callStatus !== 'all') {
+      whereClause.callStatus = callStatus;
+    }
+    if (decisionStatus && decisionStatus !== 'all') {
+      whereClause.decisionStatus = decisionStatus;
     }
 
     const candidates = await prisma.candidate.findMany({
@@ -20,6 +24,7 @@ export async function GET(req: Request) {
       include: {
         screeningResult: true,
         transcript: true,
+        job: true,
       },
       orderBy: { appliedAt: 'desc' },
     });
@@ -28,6 +33,7 @@ export async function GET(req: Request) {
       const result: any = {
         ...c,
         tags: c.tags ? JSON.parse(c.tags) : undefined,
+        job: c.job ? { ...c.job, skills: c.job.skills ? JSON.parse(c.job.skills) : [] } : null,
       };
       if (c.screeningResult) {
         result.screeningResult = {
@@ -64,7 +70,9 @@ export async function POST(req: Request) {
         avatarColor: data.avatarColor || '#3B82F6',
         appliedAt: data.appliedAt ? new Date(data.appliedAt) : new Date(),
         tags: data.tags ? JSON.stringify(data.tags) : null,
-        status: data.status || 'pending',
+        callStatus: data.callStatus || 'pending',
+        decisionStatus: data.decisionStatus || 'undecided',
+        job: data.jobId ? { connect: { id: data.jobId } } : undefined,
         user: { connect: { id: user.id } }, // Relation connect syntax
       }
     });

@@ -15,6 +15,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       include: {
         screeningResult: true,
         transcript: true,
+        job: true,
       }
     });
 
@@ -26,6 +27,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const parsed: any = {
       ...candidate,
       tags: candidate.tags ? JSON.parse(candidate.tags) : [],
+      job: candidate.job ? { ...candidate.job, skills: candidate.job.skills ? JSON.parse(candidate.job.skills) : [] } : null,
       screeningResult: candidate.screeningResult ? {
         ...candidate.screeningResult,
         strengths: JSON.parse(candidate.screeningResult.strengths),
@@ -50,7 +52,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const body = await req.json();
 
     const updateData: any = {};
-    if (body.status) updateData.status = body.status;
+    if (body.callStatus) updateData.callStatus = body.callStatus;
+    if (body.decisionStatus) updateData.decisionStatus = body.decisionStatus;
     if (body.score !== undefined) updateData.score = body.score;
 
     // First ensure the candidate belongs to the user

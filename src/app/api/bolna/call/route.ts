@@ -31,7 +31,7 @@ export async function POST(req: Request) {
           id: call_id,
           candidateName: candidate.name,
           role: candidate.role,
-          status: 'in-progress',
+          status: 'calling',
           agentId: user.agentId,
           candidate: { connect: { id: candidate.id } },
           user: { connect: { id: user.id } },
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       }),
       prisma.candidate.update({
         where: { id: candidate.id },
-        data: { status: 'in_progress', callId: call_id }
+        data: { callStatus: 'calling', decisionStatus: 'undecided', callId: call_id }
       })
     ]);
 

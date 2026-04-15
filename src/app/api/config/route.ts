@@ -1,32 +1,22 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getSessionUser, loginMockUser } from '@/lib/auth';
+import { getSessionUser } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
     const user = await getSessionUser();
-    
-    // Auto-create a mock user for testing if none exists
-    // This is purely for demoing the SaaS without a full auth provider.
     if (!user) {
-      const newUser = await prisma.user.create({
-        data: {
-          email: `demo-${Date.now()}@navisvoice.com`,
-          name: 'Demo User'
-        }
-      });
-      await loginMockUser(newUser.id);
-      return NextResponse.json({
-        hasKey: false,
-        hasAgent: false,
-        isNewUser: true,
-      });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const hasKey = !!user.apiKey;
+    const hasAgent = !!user.agentId;
+
     return NextResponse.json({
-      hasKey: !!user.apiKey,
-      hasAgent: !!user.agentId,
-      apiKey: user.apiKey || '', // Often best to redact this if frontend doesn't need to display it
+      hasKey,
+      hasAgent,
+      mode: 'live',
+      maskedApiKey: user.apiKey ? `${user.apiKey.slice(0, 6)}••••${user.apiKey.slice(-4)}` : '',
       agentId: user.agentId || '',
     });
   } catch (error) {
@@ -46,7 +36,10 @@ export async function POST(req: Request) {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { apiKey, agentId },
+      data: {
+        apiKey: apiKey?.trim() ? apiKey.trim() : user.apiKey,
+        agentId: agentId?.trim() || null,
+      },
     });
 
     return NextResponse.json({ ok: true });

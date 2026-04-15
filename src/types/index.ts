@@ -1,11 +1,6 @@
-export type CandidateStatus =
-  | "pending"
-  | "scheduled"
-  | "in_progress"
-  | "completed"
-  | "failed"
-  | "shortlisted"
-  | "rejected";
+export type CallStatus = "pending" | "calling" | "processing" | "completed" | "failed";
+
+export type DecisionStatus = "undecided" | "shortlisted" | "rejected";
 
 export type JobRole =
   | "Full-Stack Engineer"
@@ -16,25 +11,30 @@ export type JobRole =
   | "Product Manager"
   | "UI/UX Designer";
 
+export type AppMode = "demo" | "live";
+
 export interface Candidate {
   id: string;
   name: string;
   email: string;
   phone: string;
-  role: JobRole;
+  role: JobRole | string;
   experience: number;
-  status: CandidateStatus;
-  score?: number;
-  callId?: string;
-  scheduledAt?: string;
-  completedAt?: string;
-  resumeUrl?: string;
+  callStatus: CallStatus;
+  decisionStatus: DecisionStatus;
+  score?: number | null;
+  callId?: string | null;
+  scheduledAt?: string | null;
+  completedAt?: string | null;
+  resumeUrl?: string | null;
   location: string;
   appliedAt: string;
   transcript?: TranscriptMessage[];
   screeningResult?: ScreeningResult;
   tags?: string[];
   avatarColor: string;
+  jobId?: string | null;
+  job?: Job | null;
 }
 
 export interface TranscriptMessage {
@@ -60,15 +60,15 @@ export interface ScreeningResult {
 
 export interface Job {
   id: string;
-  title: JobRole;
+  title: JobRole | string;
   department: string;
   location: string;
-  type: "Full-time" | "Part-time" | "Contract";
+  type: "Full-time" | "Part-time" | "Contract" | string;
   openings: number;
   applicants: number;
   screened: number;
   shortlisted: number;
-  status: "active" | "paused" | "closed";
+  status: "active" | "paused" | "closed" | string;
   createdAt: string;
   description: string;
   skills: string[];
@@ -79,11 +79,11 @@ export interface CallLog {
   id: string;
   candidateId: string;
   candidateName: string;
-  role: JobRole;
+  role: JobRole | string;
   duration: string;
-  status: "success" | "failed" | "no-answer" | "in-progress";
+  status: CallStatus;
   startedAt: string;
-  score?: number;
+  score?: number | null;
   agentId: string;
 }
 
@@ -95,11 +95,8 @@ export interface BolnaConfig {
 
 export interface DashboardStats {
   totalCandidates: number;
-  screened: number;
+  completedInterviews: number;
   shortlisted: number;
-  rejected: number;
   avgScore: number;
-  callsToday: number;
-  successRate: number;
-  timeSaved: number;
+  activeCalls: number;
 }
