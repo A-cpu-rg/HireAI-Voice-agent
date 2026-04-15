@@ -3,9 +3,25 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
 import Header from "@/components/Layout/Header";
 import { TrendingUp, Users, Clock, Zap, Loader } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 const COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#14b8a6", "#f59e0b", "#10b981"];
+
+const MANUAL_REVIEW_MINUTES = 180;
+const MANUAL_SCREENING_COST = 450;
+const AI_SCREENING_COST = 12;
+
+function parseDurationToMinutes(duration: string | null | undefined) {
+  if (!duration) return 0;
+
+  const minutesMatch = duration.match(/(\d+)\s*m/i);
+  const secondsMatch = duration.match(/(\d+)\s*s/i);
+
+  const minutes = minutesMatch ? Number(minutesMatch[1]) : 0;
+  const seconds = secondsMatch ? Number(secondsMatch[1]) : 0;
+
+  return minutes + seconds / 60;
+}
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -24,18 +40,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function Analytics() {
   const [candidates, setCandidates] = useState<any[]>([]);
   const [callLogs, setCallLogs] = useState<any[]>([]);
-  const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch('/api/candidates').then(res => res.json()),
       fetch('/api/calls').then(res => res.json()),
-      fetch('/api/jobs').then(res => res.json())
-    ]).then(([candData, callData, jobData]) => {
+    ]).then(([candData, callData]) => {
       setCandidates(candData.data || []);
       setCallLogs(callData.data || []);
-      setJobs(jobData || []); // jobs wasn't wrapped in data
       setLoading(false);
     }).catch(err => {
       console.error(err);
@@ -43,43 +56,146 @@ export default function Analytics() {
     });
   }, []);
 
-  const roleDistribution = jobs.map((j, i) => ({
-    name: j.title.split(" ").slice(0, 2).join(" "),
-    applicants: j.applicants,
-    screened: j.screened,
-    shortlisted: j.shortlisted,
-    color: COLORS[i % COLORS.length],
-  }));
+  const analytics = useMemo(() => {
+    const completedCalls = callLogs.filter((call) => call.status === "completed");
+    const completedCandidates = candidates.filter((candidate) => candidate.callStatus === "completed");
+    const shortlistedCandidates = candidates.filter((candidate) => candidate.decisionStatus === "shortlisted");
+    const rejectedCandidates = candidates.filter((candidate) => candidate.decisionStatus === "rejected");
+    const pendingCandidates = candidates.filter((candidate) => candidate.callStatus === "pending");
+    const processingCandidates = candidates.filter((candidate) => candidate.callStatus === "processing");
+    const callingCandidates = candidates.filter((candidate) => candidate.callStatus === "calling");
 
-  const statusPie = [
-    { name: "Shortlisted", value: candidates.filter(c => c.decisionStatus === "shortlisted").length },
-    { name: "Rejected", value: candidates.filter(c => c.decisionStatus === "rejected").length },
-    { name: "Completed", value: candidates.filter(c => c.callStatus === "completed").length },
-    { name: "Pending", value: candidates.filter(c => c.callStatus === "pending").length },
-    { name: "Processing", value: candidates.filter(c => c.callStatus === "processing").length },
-  ].filter(d => d.value > 0);
+    const averageDurationMinutes = completedCalls.length
+      ? completedCalls.reduce((sum, call) => sum + parseDurationToMinutes(call.duration), 0) / completedCalls.length
+      : 0;
 
-  const scoreDistribution = [
-    { range: "0-30", count: candidates.filter(c => c.score && c.score <= 30).length },
-    { range: "31-50", count: candidates.filter(c => c.score && c.score > 30 && c.score <= 50).length },
-    { range: "51-70", count: candidates.filter(c => c.score && c.score > 50 && c.score <= 70).length },
-    { range: "71-85", count: candidates.filter(c => c.score && c.score > 70 && c.score <= 85).length },
-    { range: "86-100", count: candidates.filter(c => c.score && c.score > 85).length },
-  ];
+    const avgDurationLabel = averageDurationMinutes
+      ? `${averageDurationMinutes.toFixed(1)} min`
+      : "0.0 min";
 
-  const monthlyTrend = [
-    { month: "Oct", calls: 45, screened: 40, shortlisted: 12 },
-    { month: "Nov", calls: 78, screened: 65, shortlisted: 20 },
-    { month: "Dec", calls: 92, screened: 80, shortlisted: 28 },
-    { month: "Jan", calls: callLogs.length || 121, screened: candidates.filter(c => c.callStatus === "completed").length || 98, shortlisted: candidates.filter(c => c.decisionStatus === "shortlisted").length || 35 },
-  ];
+    const humanHoursSaved = completedCalls.length
+      ? Math.round(((MANUAL_REVIEW_MINUTES - averageDurationMinutes) * completedCalls.length) / 60)
+      : 0;
 
-  const kpiMetrics = [
-    { label: "Time to Screen", value: "4.2 min", sub: "avg call duration", icon: Clock, color: "indigo" },
-    { label: "Human Hours Saved", value: "48 hrs", sub: "this month", icon: Zap, color: "violet" },
-    { label: "AI Accuracy", value: "92%", sub: "vs human reviewer", icon: TrendingUp, color: "emerald" },
-    { label: "Cost per Screening", value: "₹12", sub: "vs ₹450 human cost", icon: Users, color: "amber" },
-  ];
+    const averageScore = completedCandidates.length
+      ? Math.round(
+          completedCandidates.reduce((sum, candidate) => sum + (candidate.score || 0), 0) / completedCandidates.length
+        )
+      : 0;
+
+    const completionRate = callLogs.length
+      ? Math.round((completedCalls.length / callLogs.length) * 100)
+      : 0;
+
+    const statusPie = [
+      { name: "Completed", value: completedCandidates.length },
+      { name: "Pending", value: pendingCandidates.length },
+      { name: "Calling", value: callingCandidates.length },
+      { name: "Processing", value: processingCandidates.length },
+      { name: "Shortlisted", value: shortlistedCandidates.length },
+      { name: "Rejected", value: rejectedCandidates.length },
+    ].filter((item) => item.value > 0);
+
+    const scoreDistribution = [
+      { range: "0-30", count: candidates.filter((c) => typeof c.score === "number" && c.score <= 30).length },
+      { range: "31-50", count: candidates.filter((c) => typeof c.score === "number" && c.score > 30 && c.score <= 50).length },
+      { range: "51-70", count: candidates.filter((c) => typeof c.score === "number" && c.score > 50 && c.score <= 70).length },
+      { range: "71-85", count: candidates.filter((c) => typeof c.score === "number" && c.score > 70 && c.score <= 85).length },
+      { range: "86-100", count: candidates.filter((c) => typeof c.score === "number" && c.score > 85).length },
+    ];
+
+    const roleMap = new Map<string, { name: string; applicants: number; screened: number; shortlisted: number }>();
+    for (const candidate of candidates) {
+      const key = candidate.job?.title || candidate.role || "Unassigned";
+      const current = roleMap.get(key) || {
+        name: String(key).split(" ").slice(0, 2).join(" "),
+        applicants: 0,
+        screened: 0,
+        shortlisted: 0,
+      };
+      current.applicants += 1;
+      if (candidate.callStatus === "completed") current.screened += 1;
+      if (candidate.decisionStatus === "shortlisted") current.shortlisted += 1;
+      roleMap.set(key, current);
+    }
+
+    const roleDistribution = Array.from(roleMap.values())
+      .sort((a, b) => b.applicants - a.applicants)
+      .slice(0, 6);
+
+    const monthBuckets = Array.from({ length: 4 }, (_, index) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (3 - index), 1);
+      date.setHours(0, 0, 0, 0);
+
+      return {
+        month: date.toLocaleString("en-US", { month: "short" }),
+        monthKey: `${date.getFullYear()}-${date.getMonth()}`,
+        calls: 0,
+        screened: 0,
+        shortlisted: 0,
+      };
+    });
+
+    for (const call of callLogs) {
+      const startedAt = new Date(call.startedAt);
+      const monthKey = `${startedAt.getFullYear()}-${startedAt.getMonth()}`;
+      const bucket = monthBuckets.find((item) => item.monthKey === monthKey);
+      if (bucket) {
+        bucket.calls += 1;
+      }
+    }
+
+    for (const candidate of candidates) {
+      const completedSource = candidate.completedAt || candidate.appliedAt;
+      const completedDate = new Date(completedSource);
+      const monthKey = `${completedDate.getFullYear()}-${completedDate.getMonth()}`;
+      const bucket = monthBuckets.find((item) => item.monthKey === monthKey);
+      if (!bucket) continue;
+
+      if (candidate.callStatus === "completed") {
+        bucket.screened += 1;
+      }
+      if (candidate.decisionStatus === "shortlisted") {
+        bucket.shortlisted += 1;
+      }
+    }
+
+    return {
+      statusPie,
+      scoreDistribution,
+      roleDistribution,
+      monthlyTrend: monthBuckets.map(({ month, calls, screened, shortlisted }) => ({ month, calls, screened, shortlisted })),
+      kpiMetrics: [
+        { label: "Time to Screen", value: avgDurationLabel, sub: `${completedCalls.length} completed call${completedCalls.length === 1 ? "" : "s"}`, icon: Clock, color: "indigo" },
+        { label: "Human Hours Saved", value: `${humanHoursSaved} hrs`, sub: "based on completed screenings", icon: Zap, color: "violet" },
+        { label: "Avg. AI Score", value: averageScore ? `${averageScore}%` : "0%", sub: "from completed interviews", icon: TrendingUp, color: "emerald" },
+        { label: "Cost per Screening", value: `₹${AI_SCREENING_COST}`, sub: `vs ₹${MANUAL_SCREENING_COST} manual review`, icon: Users, color: "amber" },
+      ],
+      impactSummary: [
+        {
+          value: averageDurationMinutes ? `${Math.max(1, Math.round(MANUAL_REVIEW_MINUTES / averageDurationMinutes))}×` : "0×",
+          title: "Faster Screening",
+          description: averageDurationMinutes
+            ? `${avgDurationLabel} AI interview vs ${Math.round(MANUAL_REVIEW_MINUTES / 60)} hrs manual review`
+            : "Starts once real call data is available",
+          color: "text-indigo-400",
+        },
+        {
+          value: `${Math.round(((MANUAL_SCREENING_COST - AI_SCREENING_COST) / MANUAL_SCREENING_COST) * 100)}%`,
+          title: "Cost Reduction",
+          description: `₹${AI_SCREENING_COST} AI screening vs ₹${MANUAL_SCREENING_COST} manual screening`,
+          color: "text-emerald-400",
+        },
+        {
+          value: `${completionRate}%`,
+          title: "Call Completion",
+          description: `${completedCalls.length} of ${callLogs.length} calls finished successfully`,
+          color: "text-violet-400",
+        },
+      ],
+    };
+  }, [candidates, callLogs]);
 
   const colorMap: Record<string, string> = {
     indigo: "text-indigo-400 bg-indigo-500/10",
@@ -102,7 +218,7 @@ export default function Analytics() {
           <>
         {/* KPI Row */}
         <div className="grid grid-cols-4 gap-4">
-          {kpiMetrics.map((m) => (
+          {analytics.kpiMetrics.map((m) => (
             <div key={m.label} className="bg-[#13131f] border border-white/5 rounded-2xl p-5">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${colorMap[m.color]}`}>
                 <m.icon className="w-4.5 h-4.5" />
@@ -130,7 +246,7 @@ export default function Analytics() {
               </div>
             </div>
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={monthlyTrend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <LineChart data={analytics.monthlyTrend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
                 <XAxis dataKey="month" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -148,14 +264,17 @@ export default function Analytics() {
             <p className="text-xs text-white/40 mb-4">Distribution breakdown</p>
             <ResponsiveContainer width="100%" height={160}>
               <PieChart>
-                <Pie data={statusPie} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} dataKey="value">
-                  {statusPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                <Pie data={analytics.statusPie} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} dataKey="value">
+                  {analytics.statusPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", fontSize: "12px" }} />
               </PieChart>
             </ResponsiveContainer>
             <div className="space-y-1.5 mt-2">
-              {statusPie.map((d, i) => (
+              {analytics.statusPie.length === 0 && (
+                <p className="text-xs text-white/35">No candidate distribution yet. Add candidates and run calls to populate this chart.</p>
+              )}
+              {analytics.statusPie.map((d, i) => (
                 <div key={d.name} className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5 text-white/50">
                      <span className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
@@ -175,7 +294,7 @@ export default function Analytics() {
             <h2 className="text-sm font-semibold text-white mb-1">Hiring Funnel by Role</h2>
             <p className="text-xs text-white/40 mb-4">Applicants → Screened → Shortlisted</p>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={roleDistribution} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} layout="vertical">
+              <BarChart data={analytics.roleDistribution} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
                 <XAxis type="number" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis type="category" dataKey="name" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} axisLine={false} tickLine={false} width={80} />
@@ -192,13 +311,13 @@ export default function Analytics() {
             <h2 className="text-sm font-semibold text-white mb-1">AI Score Distribution</h2>
             <p className="text-xs text-white/40 mb-4">Candidate screening score ranges</p>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={scoreDistribution} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <BarChart data={analytics.scoreDistribution} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis dataKey="range" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="count" name="Candidates" radius={[4, 4, 0, 0]}>
-                  {scoreDistribution.map((entry, index) => {
+                  {analytics.scoreDistribution.map((entry, index) => {
                     const fills = ["#ef4444", "#f97316", "#f59e0b", "#6366f1", "#10b981"];
                     return <Cell key={index} fill={fills[index % fills.length]} />;
                   })}
@@ -212,21 +331,13 @@ export default function Analytics() {
         <div className="bg-gradient-to-br from-indigo-600/10 to-violet-600/10 border border-indigo-500/20 rounded-2xl p-6">
           <h2 className="text-sm font-semibold text-white mb-4">📈 Business Impact Summary</h2>
           <div className="grid grid-cols-3 gap-6">
-            <div className="space-y-1">
-              <p className="text-3xl font-bold text-indigo-400">37×</p>
-              <p className="text-sm font-medium text-white">Faster Screening</p>
-              <p className="text-xs text-white/40">5 min AI call vs 3 hrs manual review</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-3xl font-bold text-emerald-400">97%</p>
-              <p className="text-sm font-medium text-white">Cost Reduction</p>
-              <p className="text-xs text-white/40">₹12 AI vs ₹450 human screener cost</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-3xl font-bold text-violet-400">95%</p>
-              <p className="text-sm font-medium text-white">Call Completion</p>
-              <p className="text-xs text-white/40">Industry-leading AI engagement rate</p>
-            </div>
+            {analytics.impactSummary.map((item) => (
+              <div key={item.title} className="space-y-1">
+                <p className={`text-3xl font-bold ${item.color}`}>{item.value}</p>
+                <p className="text-sm font-medium text-white">{item.title}</p>
+                <p className="text-xs text-white/40">{item.description}</p>
+              </div>
+            ))}
           </div>
         </div>
         </>

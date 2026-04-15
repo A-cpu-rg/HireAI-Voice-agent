@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { BolnaService } from '@/services/bolna.service';
 import { prisma } from '@/lib/prisma';
+import { getSessionUser } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
+    const user = await getSessionUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { candidateId } = await req.json();
 
     if (!candidateId) {
@@ -12,7 +16,7 @@ export async function POST(req: Request) {
 
     // Find the latest call for this candidate that is still active.
     const callLog = await prisma.callLog.findFirst({
-        where: { candidateId, status: { in: ["calling", "processing"] } },
+        where: { candidateId, userId: user.id, status: { in: ["calling", "processing"] } },
         orderBy: { startedAt: "desc" }
     });
 

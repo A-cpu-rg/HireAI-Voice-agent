@@ -9,6 +9,7 @@ export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get("next") || "/";
+  const safeNextUrl = nextUrl.startsWith("/") ? nextUrl : "/";
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -36,7 +37,7 @@ export default function LoginClient() {
 
       toast.success(mode === "login" ? "Welcome back" : "Account created");
       localStorage.removeItem("hireai-mode");
-      router.replace(nextUrl);
+      router.replace(safeNextUrl);
       router.refresh();
     } catch (error: any) {
       toast.error(error.message || "Authentication failed");
