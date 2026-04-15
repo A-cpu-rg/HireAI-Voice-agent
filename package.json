@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "dev:webhook": "concurrently \"npm run dev\" \"ngrok http 3000\"",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint"
   },
