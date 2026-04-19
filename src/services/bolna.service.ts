@@ -1,10 +1,7 @@
 import { prisma } from '@/lib/prisma';
 
 export const BolnaService = {
-  /**
-   * Calls Bolna API to initiate an outbound call.
-   * Returns the call_id. DB operations are done by the caller (the route handler).
-   */
+  
   async triggerOutboundCall(apiKey: string, agentId: string, candidateId: string) {
     const candidate = await prisma.candidate.findUnique({
       where: { id: candidateId }
