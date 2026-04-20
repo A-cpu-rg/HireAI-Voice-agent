@@ -59,27 +59,28 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const data = await req.json();
-    const candidate = await prisma.candidate.create({
+    const candidate = await (prisma.candidate as any).create({
       data: {
         name: data.name,
         email: data.email,
-        phone: data.phone,
+        phone: data.phone || "",
         role: data.role,
-        experience: Number(data.experience),
-        location: data.location,
+        experience: Number(data.experience) || 0,
+        location: data.location || "Remote",
         avatarColor: data.avatarColor || '#3B82F6',
         appliedAt: data.appliedAt ? new Date(data.appliedAt) : new Date(),
         tags: data.tags ? JSON.stringify(data.tags) : null,
         callStatus: data.callStatus || 'pending',
         decisionStatus: data.decisionStatus || 'undecided',
+        matchScore: data.matchScore ?? null,
         job: data.jobId ? { connect: { id: data.jobId } } : undefined,
-        user: { connect: { id: user.id } }, // Relation connect syntax
+        user: { connect: { id: user.id } },
       }
     });
 
     return NextResponse.json({ data: { ...candidate, tags: data.tags } });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to create candidate' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Failed to create candidate:', JSON.stringify(error?.message || error, null, 2));
+    return NextResponse.json({ error: error?.message || 'Failed to create candidate' }, { status: 500 });
   }
 }

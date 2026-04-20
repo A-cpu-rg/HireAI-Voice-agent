@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 
 export const BolnaService = {
   
-  async triggerOutboundCall(apiKey: string, agentId: string, candidateId: string) {
+  async triggerOutboundCall(apiKey: string, agentId: string, candidateId: string, smartPrompt?: string) {
     const candidate = await prisma.candidate.findUnique({
       where: { id: candidateId }
     });
@@ -22,6 +22,7 @@ export const BolnaService = {
           candidate_id: candidate.id,
           candidate_name: candidate.name,
           role: candidate.role,
+          smartPrompt: smartPrompt || "Explore their general professional background.",
         },
       }),
     });

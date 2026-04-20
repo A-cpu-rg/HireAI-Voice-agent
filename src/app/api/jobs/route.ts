@@ -7,7 +7,10 @@ export async function GET() {
     const user = await getSessionUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const jobs = await prisma.job.findMany();
+    const jobs = await (prisma.job as any).findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' }
+    });
     const parsed = jobs.map((j: any) => ({
       ...j,
       skills: j.skills ? JSON.parse(j.skills) : [],
@@ -26,7 +29,7 @@ export async function POST(req: Request) {
 
     const data = await req.json();
 
-    const job = await prisma.job.create({
+    const job = await (prisma.job as any).create({
       data: {
         title: data.title,
         department: data.department,
@@ -36,6 +39,7 @@ export async function POST(req: Request) {
         description: data.description,
         skills: JSON.stringify(data.skills || []),
         salaryRange: data.salaryRange,
+        userId: user.id,
       },
     });
 

@@ -164,22 +164,22 @@ export default function CandidateDetail() {
               </button>
             )}
             {canDecide && (
-              <>
+              <div className="flex gap-2">
                 <button
                   onClick={() => updateDecision("shortlisted")}
-                  className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 transition-all"
+                  className="flex items-center gap-2 text-sm font-semibold px-6 py-2.5 rounded-xl bg-emerald-500 text-black hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 shadow-[inset_0_1px_rgba(255,255,255,0.4)]"
                 >
                   <CheckCircle className="w-4 h-4" />
                   Shortlist
                 </button>
                 <button
                   onClick={() => updateDecision("rejected")}
-                  className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 transition-all"
+                  className="flex items-center gap-2 text-sm font-semibold px-6 py-2.5 rounded-xl bg-rose-500 text-white hover:bg-rose-400 transition-all shadow-lg shadow-rose-500/20"
                 >
                   <XCircle className="w-4 h-4" />
                   Reject
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
