@@ -6,7 +6,7 @@ A full-stack **B2B SaaS platform** that combines AI-powered resume intelligence,
 
 ---
 
-## 🚀 The Problem We Solve
+##  The Problem We Solve
 
 ### Current Hiring Process = Money Loss
 
@@ -18,17 +18,17 @@ A full-stack **B2B SaaS platform** that combines AI-powered resume intelligence,
 
 ### The HireAI Difference
 
-✅ **AI-powered resume → JD matching** (eliminates 60% weak candidates before calling)  
-✅ **2-minute structured AI calls** (10-15x faster screening)  
-✅ **Multi-layer scoring system** (accurate decision-making)  
-✅ **Shortlist auto-generated** (recruiter knows exactly who to hire)  
-✅ **Cost-effective at scale** (screen 100 candidates for <$10 in API costs)
+ **AI-powered resume → JD matching** (eliminates 60% weak candidates before calling)  
+ **2-minute structured AI calls** (10-15x faster screening)  
+ **Multi-layer scoring system** (accurate decision-making)  
+ **Shortlist auto-generated** (recruiter knows exactly who to hire)  
+ **Cost-effective at scale** (screen 100 candidates for <$10 in API costs)
 
 ---
 
-## 💡 How It Works: The 3-Layer Evaluation System
+##  How It Works: The 3-Layer Evaluation System
 
-### Layer 1: Resume Intelligence (AI JD Matching) 🎯
+### Layer 1: Resume Intelligence (AI JD Matching) 
 
 **When:** Candidate resume is uploaded  
 **What happens:**
@@ -43,10 +43,10 @@ Job: "Senior React Developer"
 Required: React, Node.js, TypeScript, PostgreSQL
 
 Candidate Resume Analysis:
-✅ React: 5 years → EXPERT (25/25)
-✅ Node.js: 3 years → PROFICIENT (20/25)
-✅ TypeScript: 2 years → INTERMEDIATE (15/25)
-❌ PostgreSQL: 0 years → MISSING (0/25)
+ React: 5 years → EXPERT (25/25)
+ Node.js: 3 years → PROFICIENT (20/25)
+ TypeScript: 2 years → INTERMEDIATE (15/25)
+ PostgreSQL: 0 years → MISSING (0/25)
 
 Match Score: 60/100
 Action: "Top 30% candidates → Move to call"
@@ -88,7 +88,7 @@ Explain a time you debugged a critical performance issue."
 
 ---
 
-### Layer 3: Decision Engine (Final Score & Recommendation) 🤖
+### Layer 3: Decision Engine (Final Score & Recommendation) 
 
 **Multi-signal scoring combines all layers:**
 
@@ -101,7 +101,7 @@ Call Culture Fit:        8/10
 
 FINAL SCORE = (60 + (8+7+7+8)*2) / 10 = 78/100
 
-Recommendation: ✅ SHORTLIST
+Recommendation:  SHORTLIST
 Confidence: HIGH (resume + call aligned)
 Next Step: Schedule technical round
 ```
@@ -113,7 +113,7 @@ Next Step: Schedule technical round
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ```
 User Dashboard
@@ -151,7 +151,7 @@ Upload Resume (PDF)
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Component | Technology | Why |
 |-----------|-----------|-----|
@@ -165,38 +165,38 @@ Upload Resume (PDF)
 
 ---
 
-## 📊 Core Features
+##  Core Features
 
 ### For Recruiters
 
-✅ **Bulk Resume Upload** — Process 50+ resumes in seconds  
-✅ **Smart JD Matching** — Auto-filter candidates by skill fit  
-✅ **One-Click AI Calling** — Trigger AI screening with one button  
-✅ **Live Call Monitoring** — See call status in real-time  
-✅ **Auto-Shortlist** — AI generates "hire this" list automatically  
-✅ **Scoring Dashboard** — View all scoring layers (resume → call → decision)  
-✅ **Candidate Analytics** — Search, filter, sort by score/status  
+ **Bulk Resume Upload** — Process 50+ resumes in seconds  
+ **Smart JD Matching** — Auto-filter candidates by skill fit  
+ **One-Click AI Calling** — Trigger AI screening with one button  
+ **Live Call Monitoring** — See call status in real-time  
+ **Auto-Shortlist** — AI generates "hire this" list automatically  
+ **Scoring Dashboard** — View all scoring layers (resume → call → decision)  
+ **Candidate Analytics** — Search, filter, sort by score/status  
 
 ### For Enterprises
 
-✅ **Multi-tenant Architecture** — Separate data per user/org  
-✅ **Role-based Access Control** — Future extensibility  
-✅ **Audit Logs** — Track all hiring decisions  
-✅ **API Integration** — Connect to ATS/HRIS  
-✅ **Webhook Callbacks** — Real-time sync with external systems  
-✅ **Database Transactions** — No partial writes, data consistency  
+ **Multi-tenant Architecture** — Separate data per user/org  
+ **Role-based Access Control** — Future extensibility  
+ **Audit Logs** — Track all hiring decisions  
+ **API Integration** — Connect to ATS/HRIS  
+ **Webhook Callbacks** — Real-time sync with external systems  
+ **Database Transactions** — No partial writes, data consistency  
 
 ### For Developers
 
-✅ **REST API** — All operations exposed  
-✅ **Type-safe** — Full TypeScript support  
-✅ **Prisma ORM** — Type-safe database queries  
-✅ **Error Handling** — Graceful fallbacks, detailed logging  
-✅ **Extensible** — Easy to add new scoring layers  
+ **REST API** — All operations exposed  
+ **Type-safe** — Full TypeScript support  
+ **Prisma ORM** — Type-safe database queries  
+ **Error Handling** — Graceful fallbacks, detailed logging  
+ **Extensible** — Easy to add new scoring layers  
 
 ---
 
-## 📈 Performance & Economics
+##  Performance & Economics
 
 ### Speed
 
@@ -218,9 +218,9 @@ Screening 100 candidates:
 
 ---
 
-## 🔄 Data Flow
+##  Data Flow
 
-### 1️⃣ Resume Upload & Parsing
+### 1️ Resume Upload & Parsing
 
 ```bash
 POST /api/parse-resume
@@ -231,7 +231,7 @@ POST /api/parse-resume
 └─ Output: {name, email, phone, skills, experience, matchScore}
 ```
 
-### 2️⃣ Job Description Intelligence
+### 2️ Job Description Intelligence
 
 ```bash
 POST /api/parse-jd
@@ -241,7 +241,7 @@ POST /api/parse-jd
 └─ Output: Structured job requirements
 ```
 
-### 3️⃣ Candidate Scoring
+### 3️ Candidate Scoring
 
 ```bash
 GET /api/candidates
@@ -250,7 +250,7 @@ GET /api/candidates
 └─ Output: Ranked candidate list ready for calling
 ```
 
-### 4️⃣ AI Call Initiation
+### 4️AI Call Initiation
 
 ```bash
 POST /api/bolna/call
@@ -262,7 +262,7 @@ POST /api/bolna/call
 └─ Output: callId, call initiated
 ```
 
-### 5️⃣ Webhook Processing (Call Complete)
+### 5️ Webhook Processing (Call Complete)
 
 ```bash
 POST /api/bolna/webhook
@@ -276,7 +276,7 @@ POST /api/bolna/webhook
 
 ---
 
-## 🗄️ Database Schema
+##  Database Schema
 
 ### Models
 
@@ -299,7 +299,7 @@ Candidate (1) → (Many) TranscriptMessages
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 
@@ -378,7 +378,7 @@ Call complete → See scoring:
 ├─ Technical: 7/10
 └─ Culture Fit: 8/10
 
-Final Score: 78/100 ✅ SHORTLIST
+Final Score: 78/100  SHORTLIST
 → Auto-generated shortlist ready for next round
 ```
 
@@ -395,7 +395,7 @@ Final Score: 78/100 ✅ SHORTLIST
 
 ---
 
-## 📊 Analytics & Reporting
+##  Analytics & Reporting
 
 ### Dashboard Metrics
 
@@ -435,7 +435,7 @@ Final Score: 78/100 ✅ SHORTLIST
 
 ---
 
-## 💰 Pricing Strategy (B2B SaaS)
+##  Pricing Strategy (B2B SaaS)
 
 ```
 Starter: $299/month
@@ -461,7 +461,7 @@ Enterprise: Custom
 
 ---
 
-## 🎯 Market Positioning
+##  Market Positioning
 
 ### Who Uses HireAI?
 
@@ -480,7 +480,7 @@ Enterprise: Custom
 
 ---
 
-## 🆚 Competitive Advantage
+## Competitive Advantage
 
 | Feature | HireAI | Northstarz | Lyra | Traditional ATS |
 |---------|--------|-----------|------|-----------------|
@@ -497,10 +497,6 @@ Enterprise: Custom
 ## 📞 Support & Community
 
 - **Documentation:** [Docs site] (coming soon)
-- **Issues:** GitHub Issues
-- **Email:** support@hireai.dev
-- **Twitter:** @HireAI_AI
-- **Slack Community:** (join our community)
 
 ---
 
@@ -516,14 +512,14 @@ We welcome contributions! Please read `CONTRIBUTING.md` for guidelines.
 
 ---
 
-## 🎓 Author
+## Author
 
 **Abhishek Meena**  
 Building the future of hiring automation.
 
 ---
 
-## 🚀 Deploy to Production
+##  Deploy to Production
 
 ### Vercel (Recommended)
 
@@ -558,4 +554,4 @@ The answer is **multi-layer intelligence**, not just one signal.
 
 ---
 
-**Ready to transform your hiring?** [Sign up for beta](https://hireai.dev) 🚀
+**Ready to transform your hiring?** [Sign up for beta](https://hireai.dev) 
