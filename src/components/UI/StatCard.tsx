@@ -6,7 +6,7 @@ interface StatCardProps {
   value: string | number;
   icon: LucideIcon;
   trend?: { value: number; label: string };
-  color: "indigo" | "emerald" | "violet" | "amber" | "rose" | "cyan";
+  color?: "indigo" | "emerald" | "violet" | "amber" | "rose" | "cyan";
   suffix?: string;
 }
 
@@ -20,7 +20,7 @@ const colorMap = {
 };
 
 export default function StatCard({ label, value, icon: Icon, trend, color, suffix }: StatCardProps) {
-  const c = colorMap[color];
+  const c = colorMap[color ?? "indigo"];
 
   return (
     <div className={cn("relative rounded-2xl p-5 border bg-[#13131f] shadow-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2xl", c.border, c.glow)}>

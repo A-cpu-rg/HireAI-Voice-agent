@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { prisma } from '@/lib/prisma';
+import { getSessionUser } from '@/lib/auth';
 
 // Fallback pure regex parser for cost-saving mode and Gemini failures
 function regexFallback(text: string) {
@@ -36,6 +37,11 @@ function regexFallback(text: string) {
 
 export async function POST(req: Request) {
   try {
+    const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const jobId = formData.get('jobId') as string | null;
@@ -50,9 +56,10 @@ export async function POST(req: Request) {
     // Try to extract text from PDF
     if (file.name.toLowerCase().endsWith('.pdf')) {
       try {
-        // Use dynamic import for pdf-parse
-        const pdfParse = (await import('pdf-parse')).default;
-        const parsed = await pdfParse(buffer);
+        const { PDFParse } = await import('pdf-parse');
+        const parser = new PDFParse({ data: buffer });
+        const parsed = await parser.getText();
+        await parser.destroy();
         pdfText = parsed.text || "";
         console.log("PDF parsed successfully, text length:", pdfText.length);
       } catch (parseError: any) {

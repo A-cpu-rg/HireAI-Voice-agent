@@ -169,53 +169,72 @@ export default function AddCandidateModal({ onClose, defaultJobId, onSuccess }: 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#13131f] border border-white/10 rounded-2xl w-full max-w-2xl mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+  
+      <div className="bg-white border border-gray-200 rounded-2xl w-full max-w-2xl mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+  
+        {/* HEADER */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div>
-            <h2 className="text-base font-semibold text-white">Add Candidate(s)</h2>
-            <p className="text-xs text-white/40 mt-0.5">Upload a single resume to auto-fill, or multiple resumes for bulk import.</p>
+            <h2 className="text-lg font-semibold text-gray-900">Add Candidates</h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Upload resumes or manually add candidate details
+            </p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all">
+  
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
-
-        <div className="p-6 space-y-5">
-          <div className="rounded-2xl border border-indigo-500/20 bg-gradient-to-br from-indigo-600/10 to-violet-600/10 p-5">
+  
+        <div className="p-6 space-y-6">
+  
+          {/* UPLOAD SECTION */}
+          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+  
             <div className="flex items-start justify-between gap-4 flex-wrap">
+  
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-indigo-300" />
-                  <p className="text-sm font-semibold text-white">Smart Resume Upload</p>
-                </div>
-                <p className="text-xs text-white/45 leading-relaxed max-w-xl mb-3">
-                  Upload multiple PDFs. HireAI will extract details and create candidates instantly. Ensure a job is selected below if applicable.
+                <p className="text-sm font-semibold text-gray-900 mb-1">
+                  Upload resumes
                 </p>
-                
+                <p className="text-xs text-gray-500 mb-3">
+                  Upload 1 file → auto-fill form  
+                  Upload multiple → bulk import candidates
+                </p>
+  
                 <select
                   value={form.jobId}
                   onChange={(e) => updateForm("jobId", e.target.value)}
-                  className="w-full max-w-xs bg-[#0b0b14] border border-indigo-500/30 rounded-xl px-3 py-2 text-sm text-white focus:outline-none mb-4"
+                  className="w-full max-w-xs bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900"
                 >
                   <option value="">No Job Selected</option>
                   {jobs.map((job) => (
-                    <option key={job.id} value={job.id}>{job.title}</option>
+                    <option key={job.id} value={job.id}>
+                      {job.title}
+                    </option>
                   ))}
                 </select>
               </div>
-              
+  
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loading}
-                className="inline-flex items-center flex-shrink-0 gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 transition-colors"
+                className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg"
               >
-                {loading ? <Loader className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                {loading ? "Processing..." : "Select Resumes"}
+                {loading ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                Select Files
               </button>
             </div>
-
+  
             <input
               ref={fileInputRef}
               type="file"
@@ -228,107 +247,146 @@ export default function AddCandidateModal({ onClose, defaultJobId, onSuccess }: 
               }}
             />
           </div>
-
+  
+          {/* BULK MODE */}
           {bulkMode ? (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-white">Bulk Import Progress</h3>
+  
+              <h3 className="text-sm font-semibold text-gray-900">
+                Upload Progress
+              </h3>
+  
               <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                 {uploadQueue.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between bg-[#0b0b14] border border-white/5 p-3 rounded-xl">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between bg-white border border-gray-200 p-3 rounded-lg"
+                  >
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <FileUp className="w-4 h-4 flex-shrink-0 text-white/40" />
-                      <p className="text-xs text-white/70 truncate">{item.name || item.file.name}</p>
+                      <FileUp className="w-4 h-4 text-gray-400" />
+                      <p className="text-xs text-gray-700 truncate">
+                        {item.name || item.file.name}
+                      </p>
                     </div>
+  
                     <div>
-                      {item.status === 'pending' && <p className="text-[10px] text-white/30 uppercase">Waiting</p>}
-                      {item.status === 'processing' && <Loader className="w-4 h-4 text-indigo-400 animate-spin" />}
-                      {item.status === 'success' && <CheckCircle className="w-4 h-4 text-emerald-400" />}
-                      {item.status === 'error' && <AlertCircle className="w-4 h-4 text-rose-400" />}
+                      {item.status === "pending" && (
+                        <span className="text-xs text-gray-400">Waiting</span>
+                      )}
+                      {item.status === "processing" && (
+                        <Loader className="w-4 h-4 text-teal-600 animate-spin" />
+                      )}
+                      {item.status === "success" && (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      )}
+                      {item.status === "error" && (
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-              
+  
               <div className="pt-4 flex justify-end">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+                  className="bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg"
                 >
                   Done
                 </button>
               </div>
             </div>
           ) : (
+            /* FORM */
             <form onSubmit={handleSubmit} className="space-y-5">
+  
               <div className="grid grid-cols-2 gap-4">
+  
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1.5">Full Name *</label>
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    Full Name *
+                  </label>
                   <input
                     required
                     value={form.name}
                     onChange={(e) => updateForm("name", e.target.value)}
-                    className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:border-indigo-500/50"
+                    className="w-full border border-gray-200 bg-white text-gray-900 rounded-lg px-3 py-2.5 text-sm"
                   />
                 </div>
+  
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1.5">Phone Number *</label>
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    Phone *
+                  </label>
                   <input
                     required
                     value={form.phone}
                     onChange={(e) => updateForm("phone", e.target.value)}
-                    className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:border-indigo-500/50"
+                    className="w-full border border-gray-200 bg-white text-gray-900 rounded-lg px-3 py-2.5 text-sm"
                   />
                 </div>
+  
               </div>
-
+  
               <div>
-                <label className="block text-xs font-medium text-white/50 mb-1.5">Email *</label>
+                <label className="text-xs text-gray-500 mb-1 block">
+                  Email *
+                </label>
                 <input
                   required
                   type="email"
                   value={form.email}
                   onChange={(e) => updateForm("email", e.target.value)}
-                  className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:border-indigo-500/50"
+                  className="w-full border border-gray-200 bg-white text-gray-900 rounded-lg px-3 py-2.5 text-sm"
                 />
               </div>
-
+  
               <div className="grid grid-cols-2 gap-4">
+  
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1.5">Role / Location *</label>
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    Location *
+                  </label>
                   <input
                     required
                     value={form.location}
                     onChange={(e) => updateForm("location", e.target.value)}
-                    placeholder="Bangalore, etc."
-                    className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:border-indigo-500/50"
+                    className="w-full border border-gray-200 bg-white text-gray-900 rounded-lg px-3 py-2.5 text-sm"
                   />
                 </div>
+  
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1.5">Skills / Tags</label>
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    Skills
+                  </label>
                   <input
                     value={form.tags}
                     onChange={(e) => updateForm("tags", e.target.value)}
-                    className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:border-indigo-500/50"
+                    className="w-full border border-gray-200 bg-white text-gray-900 rounded-lg px-3 py-2.5 text-sm"
                   />
                 </div>
+  
               </div>
-
+  
               <div className="flex gap-3 pt-2">
+  
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 bg-white/5 hover:bg-white/10 text-white/70 text-sm font-medium py-2.5 rounded-xl transition-colors"
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm py-2.5 rounded-lg"
                 >
                   Cancel
                 </button>
+  
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium py-2.5 rounded-lg"
                 >
-                  Manually Add Candidate
+                  Add Candidate
                 </button>
+  
               </div>
             </form>
           )}

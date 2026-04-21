@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Bot, Loader, ArrowRight, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { Bot, Loader, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function LoginClient() {
@@ -10,222 +10,296 @@ export default function LoginClient() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
 
-  // Form State
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const emailRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Autofocus email on mount and mode switch
-    if (emailRef.current) {
-      emailRef.current.focus();
-    }
+    const timer = setTimeout(() => {
+      if (mode === "register") {
+        nameRef.current?.focus();
+      } else {
+        emailRef.current?.focus();
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [mode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (loading) return;
+
+    if (!email || !password) {
+      toast.error("Email and password are required");
+      return;
+    }
+
+    if (!email.includes("@")) {
+      toast.error("Please enter a valid email");
+      return;
+    }
+
+    if (mode === "register" && !name) {
+      toast.error("Name is required");
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      const endpoint =
+        mode === "login" ? "/api/auth/login" : "/api/auth/register";
+
+      const payload =
+        mode === "login"
+          ? { email, password }
+          : { name, email, password };
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Unexpected server response");
+      }
+
+      if (!res.ok) {
+        throw new Error(
+          mode === "login"
+            ? "Invalid credentials"
+            : "Failed to create account"
+        );
+      }
+
       if (mode === "login") {
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Invalid email or password");
-
-        toast.success("Welcome back to HireAI");
-        window.location.href = "/";
+        toast.success("Welcome back 🚀");
+        router.push("/");
       } else {
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to create account");
-
-        toast.success("Account created successfully! Please log in.");
+        toast.success("Account created! Please login.");
         setMode("login");
         setPassword("");
       }
     } catch (error: any) {
-      toast.error(error.message);
+      if (error.name === "AbortError") {
+        toast.error("Request timed out. Try again.");
+      } else {
+        toast.error(error.message || "Something went wrong");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 min-h-screen bg-[#0b0b14] flex">
-      {/* LEFT SIDE: Branding / Value */}
-      <div className="hidden lg:flex w-1/2 bg-[#080810] border-r border-white/5 relative items-center justify-center p-12 overflow-hidden">
-        {/* Decorative background glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none" />
-
-        <div className="max-w-xl relative z-10 w-full">
-          <div className="flex items-center gap-3 mb-12">
-            <div className="w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center justify-center shadow-[inset_0_1px_rgba(255,255,255,0.1)]">
-              <Bot className="w-6 h-6 text-indigo-400" />
-            </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">HireAI</h1>
-          </div>
-
-          <h2 className="text-4xl md:text-5xl font-bold text-white leading-[1.1] mb-6">
-            AI Hiring <br />
-            Automation Platform
-          </h2>
-          
-          <p className="text-lg text-indigo-300 font-medium mb-10 flex items-center gap-3">
-            <span className="w-8 h-[1px] bg-indigo-500/50" />
-            Screen 100 candidates in under 1 hour using AI calls
-          </p>
-
-          {/* Simple Illustration / UI Preview */}
-          <div className="bg-[#13131f] border border-white/10 rounded-2xl p-6 shadow-2xl relative">
-            <div className="absolute inset-0 bg-gradient-to-t from-[#13131f] via-transparent to-transparent z-10 rounded-2xl" />
-            
-            <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-4">
-              <div className="w-32 h-4 bg-white/5 rounded-full" />
-              <div className="w-16 h-4 bg-indigo-500/20 rounded-full" />
-            </div>
-            
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[10px] text-white/30">AI</div>
-                    <div className="space-y-2">
-                       <div className="w-24 h-2.5 bg-white/10 rounded-full" />
-                       <div className="w-16 h-2 bg-white/5 rounded-full" />
-                    </div>
-                  </div>
-                  <div className="w-10 h-4 bg-emerald-500/20 rounded-md" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* RIGHT SIDE: Authentication Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12 relative">
+    <div className="min-h-screen flex bg-[#f6f8fb]">
+  
+      {/* LEFT SIDE */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-8">
         <div className="w-full max-w-md">
-          {/* Mobile Header (Hidden on Desktop) */}
-          <div className="flex lg:hidden items-center justify-center gap-2 mb-8">
-            <Bot className="w-6 h-6 text-indigo-400" />
-            <h1 className="text-xl font-bold text-white tracking-tight">HireAI</h1>
+  
+          {/* Brand */}
+          <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-teal-700 flex items-center justify-center shadow-md">
+                <Bot className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-semibold text-gray-900 text-lg tracking-tight">
+                HireAI
+              </span>
+            </div>
+  
+            <span className="text-xs text-gray-400">
+              by <span className="font-medium text-gray-600">NavisLab</span>
+            </span>
           </div>
-
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white tracking-tight mb-2">
-              {mode === "login" ? "Welcome back 👋" : "Create your account"}
-            </h2>
-            <p className="text-sm text-white/45">
-              {mode === "login" 
-                ? "Sign in to your account" 
-                : "Start screening candidates in minutes"}
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
+  
+          {/* Heading */}
+          <h2 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">
+            {mode === "login" ? "Welcome back 👋" : "Create your account"}
+          </h2>
+  
+          <p className="text-gray-500 mb-8 text-sm leading-relaxed">
+            Intelligent hiring powered by AI-driven screening & decision systems.
+          </p>
+  
+          {/* FORM */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+  
             {mode === "register" && (
               <div>
-                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Full Name</label>
+                <label className="text-xs text-gray-500 mb-1 block">
+                  Full Name
+                </label>
                 <input
+                  ref={nameRef}
                   type="text"
-                  required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
-                  className="w-full bg-[#13131f] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                  className="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 caret-teal-600 rounded-lg px-4 py-3 text-sm shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
                 />
               </div>
             )}
-
+  
             <div>
-              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Email Address</label>
+              <label className="text-xs text-gray-500 mb-1 block">Email</label>
               <input
                 ref={emailRef}
                 type="email"
-                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
-                className="w-full bg-[#13131f] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                className="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 caret-teal-600 rounded-lg px-4 py-3 text-sm shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
               />
             </div>
-
+  
             <div>
-              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Password</label>
+              <label className="text-xs text-gray-500 mb-1 block">
+                Password
+              </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
-                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-[#13131f] border border-white/10 rounded-xl px-4 py-3.5 pr-12 text-sm text-white placeholder-white/20 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                  className="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 caret-teal-600 rounded-lg px-4 py-3 pr-10 text-sm shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
                 />
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
-
+  
+            {/* CTA */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-500/20 shadow-[inset_0_1px_rgba(255,255,255,0.2)] mt-6 flex justify-center items-center gap-2"
+              className="w-full bg-teal-800 hover:bg-teal-900 text-white py-3 rounded-lg font-medium flex justify-center items-center gap-2 shadow-md hover:shadow-lg transition-all"
             >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <Loader className="w-4 h-4 animate-spin" /> 
-                  {mode === "login" ? "Signing in..." : "Creating account..."}
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  {mode === "login" ? "Sign In" : "Create Account"}
-                  <ArrowRight className="w-4 h-4" />
-                </span>
-              )}
+              {loading && <Loader className="w-4 h-4 animate-spin" />}
+              {mode === "login" ? "Sign In" : "Create Account"}
             </button>
           </form>
-
-          <div className="mt-8 pt-8 border-t border-white/5 text-center">
-            {mode === "login" ? (
-              <p className="text-sm text-white/45">
-                 Don't have an account?{" "}
-                 <button onClick={() => setMode("register")} className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors">
-                   Create Account
-                 </button>
-              </p>
-            ) : (
-              <p className="text-sm text-white/45">
-                 Already have an account?{" "}
-                 <button onClick={() => setMode("login")} className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors">
-                   Sign In
-                 </button>
-              </p>
-            )}
+  
+          {/* Divider */}
+          <div className="my-6 flex items-center gap-3 text-gray-400 text-xs">
+            <div className="flex-1 h-px bg-gray-200" />
+            OR
+            <div className="flex-1 h-px bg-gray-200" />
           </div>
-
-          <div className="mt-12 flex items-center justify-center gap-2 text-white/30 text-xs font-medium">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Your data is securely encrypted
+  
+          {/* Google */}
+          <button className="w-full border border-gray-300 py-3 rounded-lg text-sm flex justify-center gap-2 hover:bg-gray-50 transition shadow-sm">
+            Continue with Google
+          </button>
+  
+          {/* Switch */}
+          <p className="text-center text-sm mt-6 text-gray-500">
+            {mode === "login" ? (
+              <>
+                Don’t have an account?{" "}
+                <button
+                  onClick={() => setMode("register")}
+                  className="text-teal-700 font-medium"
+                >
+                  Sign Up
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button
+                  onClick={() => setMode("login")}
+                  className="text-teal-700 font-medium"
+                >
+                  Login
+                </button>
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+  
+      {/* RIGHT SIDE (PREMIUM BRAND PANEL) */}
+      <div className="hidden lg:flex w-1/2 relative bg-gradient-to-br from-[#0f172a] via-[#0f766e] to-[#0d9488] text-white p-14 flex-col justify-center overflow-hidden">
+  
+        {/* glow */}
+        <div className="absolute w-[500px] h-[500px] bg-teal-400/20 blur-[140px] top-[-150px] right-[-100px]" />
+  
+        {/* subtle pattern */}
+        <div className="absolute inset-0 opacity-[0.04] bg-[radial-gradient(circle,white_1px,transparent_1px)] [background-size:20px_20px]" />
+  
+        {/* small branding */}
+        <p className="text-xs tracking-widest text-white/50 mb-6">
+          NAVISLABS
+        </p>
+  
+        {/* headline */}
+        <h2 className="text-4xl font-bold mb-6 leading-tight max-w-md">
+          Intelligence layer for modern hiring
+        </h2>
+  
+        {/* description */}
+        <p className="text-lg text-white/80 mb-10 max-w-md leading-relaxed">
+          HireAI combines AI calls, resume intelligence, and structured scoring
+          to help teams evaluate candidates faster and make better decisions.
+        </p>
+  
+        {/* product visual card */}
+        <div className="bg-white/10 border border-white/10 rounded-2xl p-6 backdrop-blur mb-10 max-w-md shadow-lg">
+  
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-white/70">AI Screening</span>
+            <span className="text-xs bg-white/20 px-2 py-1 rounded-md">
+              LIVE
+            </span>
+          </div>
+  
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs">
+                    AI
+                  </div>
+                  <div>
+                    <p className="text-sm">Candidate #{i}</p>
+                    <p className="text-xs text-white/50">Analyzed</p>
+                  </div>
+                </div>
+                <span className="text-xs text-emerald-300">✔</span>
+              </div>
+            ))}
           </div>
         </div>
+  
+        {/* footer */}
+        <p className="text-sm text-white/50">
+          Built by NavisLab • AI-native hiring workflow
+        </p>
+  
       </div>
     </div>
   );

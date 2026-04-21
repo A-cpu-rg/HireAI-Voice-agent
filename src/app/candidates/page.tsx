@@ -139,186 +139,221 @@ export default function Candidates() {
   const roles = Array.from(new Set(candidates.map((candidate) => candidate.role)));
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header title="Candidates" subtitle="Add candidates, start AI calls, and review interview outcomes" />
-
-      <div className="pt-16 p-6 space-y-5">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="max-w-2xl">
-            <p className="text-sm text-white/55">
-              Add a candidate directly for the fastest workflow, or optionally attach them to a job. Every candidate should always have one clear next step.
+    <div className="flex flex-col min-h-screen bg-[#f6f8fb] text-gray-900">
+  
+      <Header
+        title="Candidates"
+        subtitle="Add candidates, run AI calls, and review results"
+      />
+  
+      <div className="pt-16 p-6 space-y-6">
+  
+        {/* HEADER */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 flex justify-between items-center">
+          <div className="max-w-xl">
+            <p className="text-sm text-gray-500">
+              Add candidates → Start AI calls → Review results
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
-            >
-              <Plus className="w-4 h-4" />
-              Add Candidate
-            </button>
-          </div>
+  
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg"
+          >
+            <Plus className="w-4 h-4" />
+            Add Candidate
+          </button>
         </div>
-
+  
+        {/* SEARCH + FILTER */}
         <div className="flex items-center gap-3 flex-wrap">
+  
           <div className="relative flex-1 min-w-[240px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search candidates..."
-              className="w-full bg-[#13131f] border border-white/5 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-indigo-500/50 transition-colors"
+              className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-teal-500"
             />
           </div>
-
-          <div className="relative">
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value as JobRole | "all")}
-              className="appearance-none bg-[#13131f] border border-white/5 rounded-xl pl-4 pr-8 py-2.5 text-sm text-white/70 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
-            >
-              <option value="all">All Roles</option>
-              {roles.map((role) => <option key={role} value={role}>{role}</option>)}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none" />
-          </div>
-
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as "score" | "date" | "name")}
-              className="appearance-none bg-[#13131f] border border-white/5 rounded-xl pl-4 pr-8 py-2.5 text-sm text-white/70 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
-            >
-              <option value="date">Sort: Latest</option>
-              <option value="score">Sort: Score</option>
-              <option value="name">Sort: Name</option>
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none" />
-          </div>
+  
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value as JobRole | "all")}
+            className="bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm"
+          >
+            <option value="all">All Roles</option>
+            {roles.map((role) => (
+              <option key={role}>{role}</option>
+            ))}
+          </select>
+  
+          <select
+            value={sortBy}
+            onChange={(e) =>
+              setSortBy(e.target.value as "score" | "date" | "name")
+            }
+            className="bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm"
+          >
+            <option value="date">Latest</option>
+            <option value="score">Score</option>
+            <option value="name">Name</option>
+          </select>
         </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
+  
+        {/* STATUS FILTERS */}
+        <div className="flex gap-2 flex-wrap">
           {callStatusFilters.map((filter) => (
             <button
               key={filter.value}
               onClick={() => setCallStatusFilter(filter.value)}
               className={cn(
-                "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all",
+                "text-xs px-3 py-1.5 rounded-full border transition",
                 callStatusFilter === filter.value
-                  ? "bg-indigo-600/30 text-indigo-300 border-indigo-500/50"
-                  : "bg-transparent text-white/40 border-white/10 hover:border-white/20 hover:text-white/60"
+                  ? "bg-teal-600 text-white border-teal-600"
+                  : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100"
               )}
             >
               {filter.label}
             </button>
           ))}
         </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
+  
+        <div className="flex gap-2 flex-wrap">
           {decisionFilters.map((filter) => (
             <button
               key={filter.value}
               onClick={() => setDecisionFilter(filter.value)}
               className={cn(
-                "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all",
+                "text-xs px-3 py-1.5 rounded-full border transition",
                 decisionFilter === filter.value
-                  ? "bg-emerald-600/20 text-emerald-300 border-emerald-500/40"
-                  : "bg-transparent text-white/40 border-white/10 hover:border-white/20 hover:text-white/60"
+                  ? "bg-emerald-600 text-white border-emerald-600"
+                  : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100"
               )}
             >
               {filter.label}
             </button>
           ))}
-          <span className="ml-auto text-xs text-white/30">{filtered.length} results</span>
+  
+          <span className="ml-auto text-xs text-gray-400">
+            {filtered.length} results
+          </span>
         </div>
-
-        <div className="bg-[#13131f] border border-white/5 rounded-2xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/5">
-                <th className="text-left text-[11px] font-semibold text-white/30 uppercase tracking-wider px-5 py-3">Candidate</th>
-                <th className="text-left text-[11px] font-semibold text-white/30 uppercase tracking-wider px-4 py-3">Role</th>
-                <th className="text-left text-[11px] font-semibold text-white/30 uppercase tracking-wider px-4 py-3">Job</th>
-                <th className="text-left text-[11px] font-semibold text-white/30 uppercase tracking-wider px-4 py-3">Call Status</th>
-                <th className="text-left text-[11px] font-semibold text-white/30 uppercase tracking-wider px-4 py-3">Decision</th>
-                <th className="text-left text-[11px] font-semibold text-white/30 uppercase tracking-wider px-4 py-3">Score</th>
-                <th className="text-left text-[11px] font-semibold text-white/30 uppercase tracking-wider px-4 py-3">Skills</th>
-                <th className="text-left text-[11px] font-semibold text-white/30 uppercase tracking-wider px-4 py-3">Actions</th>
+  
+        {/* TABLE */}
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+  
+          <table className="w-full text-sm">
+  
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left px-5 py-3 text-xs text-gray-500">Candidate</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-500">Role</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-500">Job</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-500">Status</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-500">Decision</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-500">Score</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-500">Skills</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-500">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.03]">
+  
+            <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-white/50">
-                    <Loader className="w-6 h-6 animate-spin mx-auto mb-2 opacity-50" />
-                    Loading candidates...
+                  <td colSpan={8} className="py-16 text-center">
+                    <Loader className="animate-spin mx-auto text-gray-400" />
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center text-white/30">
-                    <Filter className="w-8 h-8 mx-auto mb-3 opacity-40" />
-                    <p className="text-sm font-medium text-white/45 mb-1">No candidates match these filters</p>
-                    <p className="text-xs">Add a candidate, connect Bolna, and start the first real AI call.</p>
+                  <td colSpan={8} className="py-16 text-center text-gray-500">
+                    No candidates found
                   </td>
                 </tr>
               ) : (
                 filtered.map((candidate) => (
                   <tr
                     key={candidate.id}
-                    className="hover:bg-white/[0.02] transition-colors group cursor-pointer"
-                    onClick={() => router.push(`/candidates/${candidate.id}`)}
+                    className="border-t hover:bg-gray-50 cursor-pointer"
+                    onClick={() =>
+                      router.push(`/candidates/${candidate.id}`)
+                    }
                   >
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <div
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold"
                           style={{ background: candidate.avatarColor }}
                         >
-                          {candidate.name.split(" ").map((part) => part[0]).join("")}
+                          {candidate.name
+                            .split(" ")
+                            .map((p) => p[0])
+                            .join("")}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-white group-hover:text-indigo-300 transition-colors">{candidate.name}</p>
-                          <p className="text-xs text-white/40">{candidate.email}</p>
+                          <p className="font-medium">{candidate.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {candidate.email}
+                          </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3.5 text-sm text-white/70">{candidate.role}</td>
-                    <td className="px-4 py-3.5 text-xs text-white/45">{candidate.job?.title || "Direct candidate"}</td>
-                    <td className="px-4 py-3.5"><CallStatusBadge status={candidate.callStatus} /></td>
-                    <td className="px-4 py-3.5"><DecisionBadge status={candidate.decisionStatus} /></td>
-                    <td className="px-4 py-3.5">
-                      {candidate.score ? <ScoreBadge score={candidate.score} /> : <span className="text-xs text-white/20">—</span>}
+  
+                    <td className="px-4 py-3">{candidate.role}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {candidate.job?.title || "Direct"}
                     </td>
-                    <td className="px-4 py-3.5">
+  
+                    <td className="px-4 py-3">
+                      <CallStatusBadge status={candidate.callStatus} />
+                    </td>
+  
+                    <td className="px-4 py-3">
+                      <DecisionBadge status={candidate.decisionStatus} />
+                    </td>
+  
+                    <td className="px-4 py-3">
+                      {candidate.score ? (
+                        <ScoreBadge score={candidate.score} />
+                      ) : (
+                        <span className="text-gray-400 text-xs">—</span>
+                      )}
+                    </td>
+  
+                    <td className="px-4 py-3">
                       <div className="flex gap-1 flex-wrap max-w-[140px]">
-                        {(candidate.tags || []).slice(0, 2).map((tag) => <TagBadge key={tag} tag={tag} />)}
-                        {(candidate.tags || []).length > 2 && (
-                          <span className="text-[10px] text-white/30">+{(candidate.tags || []).length - 2}</span>
-                        )}
+                        {(candidate.tags || [])
+                          .slice(0, 2)
+                          .map((tag) => (
+                            <TagBadge key={tag} tag={tag} />
+                          ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
-                      {(candidate.callStatus === "pending" || candidate.callStatus === "failed") ? (
+  
+                    <td
+                      className="px-4 py-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {(candidate.callStatus === "pending" ||
+                        candidate.callStatus === "failed") ? (
                         <button
                           onClick={() => initiateCall(candidate.id)}
                           disabled={Boolean(activeCallId)}
-                          className={cn(
-                            "inline-flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-xl transition-all",
-                            activeCallId
-                              ? "bg-white/5 text-white/30 cursor-not-allowed"
-                              : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20"
-                          )}
+                          className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-lg text-sm"
                         >
-                          <Phone className="w-4 h-4" />
-                          Start AI Call
+                          <Phone className="w-4 h-4 inline mr-1" />
+                          Call
                         </button>
                       ) : (
                         <button
-                          onClick={() => router.push(`/candidates/${candidate.id}`)}
-                          className="inline-flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 transition-all"
+                          onClick={() =>
+                            router.push(`/candidates/${candidate.id}`)
+                          }
+                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm"
                         >
-                          View Result
+                          View
                         </button>
                       )}
                     </td>
@@ -329,11 +364,15 @@ export default function Candidates() {
           </table>
         </div>
       </div>
-
-      {showAddModal && <AddCandidateModal onClose={() => {
-        setShowAddModal(false);
-        fetchCandidates();
-      }} />}
+  
+      {showAddModal && (
+        <AddCandidateModal
+          onClose={() => {
+            setShowAddModal(false);
+            fetchCandidates();
+          }}
+        />
+      )}
     </div>
   );
 }
