@@ -58,135 +58,197 @@ export default function Jobs() {
   }, [jobs, candidates]);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header title="Jobs" subtitle="Optional hiring pipelines for structured recruiting" />
-
-      <div className="pt-16 p-6 space-y-5">
-        <div className="flex items-center justify-between gap-4">
-          <div className="max-w-2xl">
-            <p className="text-sm text-white/55">
-              Manage your jobs to keep candidates cleanly separated. Add candidates directly to a pipeline.
-            </p>
-          </div>
+    <div className="flex flex-col min-h-screen bg-[#f6f8fb] text-gray-900">
+  
+      <Header title="Jobs" subtitle="Manage hiring pipelines for structured recruiting" />
+  
+      <div className="pt-16 p-6 space-y-6">
+  
+        {/* TOP */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <p className="text-sm text-gray-500 max-w-xl">
+            Create jobs to organize candidates into structured pipelines.
+          </p>
+  
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg"
           >
             <Plus className="w-4 h-4" />
             Create Job
           </button>
         </div>
-
+  
+        {/* LOADING */}
         {loading ? (
-          <div className="text-center py-20 text-white/50">
-            <Loader className="w-8 h-8 animate-spin mx-auto mb-4 opacity-50" />
-            <p>Loading pipelines...</p>
+          <div className="text-center py-20">
+            <Loader className="animate-spin mx-auto text-gray-400" />
           </div>
         ) : jobCards.length === 0 ? (
-          <div className="bg-[#13131f] border border-white/5 rounded-3xl p-10 text-center">
-            <Briefcase className="w-12 h-12 text-white/20 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-white mb-2">No jobs yet</h2>
-            <p className="text-sm text-white/45 max-w-xl mx-auto mb-6">
-              Create a job when you want to group candidates under a role.
+          <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center">
+            <Briefcase className="w-10 h-10 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-lg font-semibold mb-2">No jobs yet</h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Create your first job to start building a pipeline
             </p>
             <button
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+              className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm"
             >
-              <Plus className="w-4 h-4" />
-              Create your first job
+              Create Job
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid gap-5">
+  
             {jobCards.map((job) => {
-              const shortlistRate = job.screened > 0 ? Math.round((job.shortlisted / job.screened) * 100) : 0;
-
+              const shortlistRate =
+                job.screened > 0
+                  ? Math.round((job.shortlisted / job.screened) * 100)
+                  : 0;
+  
               return (
-                <div key={job.id} className="bg-[#13131f] border border-white/5 rounded-2xl p-6 hover:border-indigo-500/20 transition-all shadow-xl shadow-black/20">
-                  <div className="flex items-start justify-between gap-4 mb-4">
+                <div
+                  key={job.id}
+                  className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-md transition"
+                >
+  
+                  {/* HEADER */}
+                  <div className="flex justify-between items-start mb-4 flex-wrap gap-3">
+  
                     <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-semibold text-white">{job.title}</h3>
-                        <span className={cn("text-[11px] font-semibold px-2.5 py-0.5 rounded-full border", statusColor[job.status] || statusColor.active)}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold">{job.title}</h3>
+  
+                        <span className="text-xs px-2 py-0.5 rounded-full border text-gray-600 bg-gray-100">
                           {job.status}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-white/40">
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.location}</span>
+  
+                      <div className="flex gap-4 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {job.location}
+                        </span>
                         <span>{job.type}</span>
                         <span>{job.department}</span>
                       </div>
                     </div>
-                    <div className="text-right flex items-center gap-4">
-                      <div>
-                        <p className="text-sm font-semibold text-white">{job.salaryRange}</p>
-                        <p className="text-xs text-white/35 mt-1">{job.openings} opening{job.openings > 1 ? "s" : ""}</p>
+  
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-sm font-medium">{job.salaryRange}</p>
+                        <p className="text-xs text-gray-400">
+                          {job.openings} opening{job.openings > 1 ? "s" : ""}
+                        </p>
                       </div>
+  
                       <button
                         onClick={() => setShowAddCandidateForJob(job.id)}
-                        className="bg-white/5 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all border border-white/5 flex flex-col items-center justify-center gap-1 h-full shadow-inner shadow-white/5"
+                        className="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg text-sm"
                       >
-                         <Plus className="w-4 h-4" />
-                         Add Candidates
+                        Add Candidates
                       </button>
                     </div>
                   </div>
-
-                  <p className="text-sm text-white/50 leading-relaxed mb-6">{job.description}</p>
-
+  
+                  {/* DESCRIPTION */}
+                  <p className="text-sm text-gray-600 mb-5">
+                    {job.description}
+                  </p>
+  
+                  {/* STATS */}
                   <div className="grid grid-cols-4 gap-4 mb-5">
-                    <div className="bg-white/[0.03] rounded-xl p-3">
-                      <div className="flex items-center gap-2 text-white/30 text-xs mb-2">
-                        <Users className="w-3.5 h-3.5" />
-                        Added
-                      </div>
-                      <p className="text-2xl font-bold text-white">{job.applicants}</p>
+  
+                    <div className="bg-gray-50 rounded-xl p-3">
+                      <p className="text-xs text-gray-400 mb-1">Added</p>
+                      <p className="text-xl font-semibold">{job.applicants}</p>
                     </div>
-                    <div className="bg-white/[0.03] rounded-xl p-3">
-                      <div className="text-white/30 text-xs mb-2">Screened</div>
-                      <p className="text-2xl font-bold text-cyan-400">{job.screened}</p>
+  
+                    <div className="bg-gray-50 rounded-xl p-3">
+                      <p className="text-xs text-gray-400 mb-1">Screened</p>
+                      <p className="text-xl font-semibold text-blue-600">
+                        {job.screened}
+                      </p>
                     </div>
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-                      <div className="flex items-center gap-2 text-emerald-400/50 text-xs mb-2">
-                        <CheckCircle className="w-3.5 h-3.5" />
+  
+                    <div className="bg-emerald-50 rounded-xl p-3">
+                      <p className="text-xs text-emerald-500 mb-1">
                         Shortlisted
-                      </div>
-                      <p className="text-2xl font-bold text-emerald-400">{job.shortlisted}</p>
+                      </p>
+                      <p className="text-xl font-semibold text-emerald-600">
+                        {job.shortlisted}
+                      </p>
                     </div>
-                    <div className="bg-white/[0.03] rounded-xl p-3">
-                      <div className="text-white/30 text-xs mb-2">Shortlist Rate</div>
-                      <p className="text-2xl font-bold text-violet-400">{shortlistRate}%</p>
+  
+                    <div className="bg-gray-50 rounded-xl p-3">
+                      <p className="text-xs text-gray-400 mb-1">
+                        Shortlist Rate
+                      </p>
+                      <p className="text-xl font-semibold">
+                        {shortlistRate}%
+                      </p>
                     </div>
+  
                   </div>
-                  
+  
+                  {/* CANDIDATES PREVIEW */}
                   {job.candidatesList.length > 0 && (
-                    <div className="border-t border-white/5 pt-4">
-                      <p className="text-xs text-white/30 uppercase tracking-widest mb-3">Recent Pipeline</p>
-                      <div className="flex max-w-full overflow-hidden items-center gap-4">
+                    <div className="border-t border-gray-200 pt-4">
+                      <p className="text-xs text-gray-400 mb-3">
+                        Recent Pipeline
+                      </p>
+  
+                      <div className="flex gap-3 flex-wrap">
                         {job.candidatesList.map((c: any) => (
-                           <div key={c.id} className="flex items-center gap-2 bg-[#0b0b14] px-3 py-1.5 rounded-lg border border-white/5">
-                             <div className="w-5 h-5 rounded-full text-[8px] font-bold text-white flex items-center justify-center flex-shrink-0" style={{background: c.avatarColor}}>
-                               {c.name.charAt(0)}
-                             </div>
-                             <span className="text-xs text-white/70 truncate w-20">{c.name}</span>
-                           </div>
+                          <div
+                            key={c.id}
+                            className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg"
+                          >
+                            <div
+                              className="w-5 h-5 rounded-full text-[8px] font-bold text-white flex items-center justify-center"
+                              style={{ background: c.avatarColor }}
+                            >
+                              {c.name.charAt(0)}
+                            </div>
+  
+                            <span className="text-xs text-gray-700">
+                              {c.name}
+                            </span>
+                          </div>
                         ))}
+  
                         {job.applicants > 3 && (
-                          <span className="text-xs text-white/30">+{job.applicants - 3} more</span>
+                          <span className="text-xs text-gray-400">
+                            +{job.applicants - 3} more
+                          </span>
                         )}
                       </div>
                     </div>
                   )}
+  
                 </div>
               );
             })}
+  
           </div>
         )}
       </div>
-
-      {showAddModal && <AddJobModal onClose={() => setShowAddModal(false)} onCreated={fetchData} />}
-      {showAddCandidateForJob && <AddCandidateModal defaultJobId={showAddCandidateForJob} onClose={() => setShowAddCandidateForJob(null)} onSuccess={fetchData} />}
+  
+      {showAddModal && (
+        <AddJobModal
+          onClose={() => setShowAddModal(false)}
+          onCreated={fetchData}
+        />
+      )}
+  
+      {showAddCandidateForJob && (
+        <AddCandidateModal
+          defaultJobId={showAddCandidateForJob}
+          onClose={() => setShowAddCandidateForJob(null)}
+          onSuccess={fetchData}
+        />
+      )}
     </div>
   );
 }
