@@ -205,142 +205,127 @@ export default function Analytics() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-[#f6f8fb] text-gray-900">
+  
       <Header title="Analytics" subtitle="AI screening performance metrics and insights" />
-
+  
       <div className="pt-16 p-6 space-y-6">
+  
         {loading ? (
-             <div className="text-center py-20 text-white/50">
-               <Loader className="w-8 h-8 animate-spin mx-auto mb-4 opacity-50" />
-               <p>Loading Analytics...</p>
-             </div>
+          <div className="text-center py-20 text-gray-400">
+            <Loader className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <p>Loading Analytics...</p>
+          </div>
         ) : (
           <>
-        {/* KPI Row */}
-        <div className="grid grid-cols-4 gap-4">
-          {analytics.kpiMetrics.map((m) => (
-            <div key={m.label} className="bg-[#13131f] border border-white/5 rounded-2xl p-5">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${colorMap[m.color]}`}>
-                <m.icon className="w-4.5 h-4.5" />
-              </div>
-              <p className="text-2xl font-bold text-white">{m.value}</p>
-              <p className="text-xs font-medium text-white/60 mt-0.5">{m.label}</p>
-              <p className="text-[11px] text-white/30 mt-0.5">{m.sub}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Charts Row 1 */}
-        <div className="grid grid-cols-3 gap-4">
-          {/* Monthly Trend */}
-          <div className="col-span-2 bg-[#13131f] border border-white/5 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-sm font-semibold text-white">Monthly Screening Trend</h2>
-                <p className="text-xs text-white/40 mt-0.5">4-month overview</p>
-              </div>
-              <div className="flex items-center gap-4 text-xs text-white/40">
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-indigo-500" /> Calls</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-violet-500" /> Screened</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Shortlisted</span>
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={analytics.monthlyTrend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="month" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="calls" name="Calls" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 4 }} />
-                <Line type="monotone" dataKey="screened" name="Screened" stroke="#8b5cf6" strokeWidth={2} dot={{ fill: "#8b5cf6", r: 4 }} />
-                <Line type="monotone" dataKey="shortlisted" name="Shortlisted" stroke="#10b981" strokeWidth={2} dot={{ fill: "#10b981", r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Status Pie */}
-          <div className="bg-[#13131f] border border-white/5 rounded-2xl p-5">
-            <h2 className="text-sm font-semibold text-white mb-1">Candidate Status</h2>
-            <p className="text-xs text-white/40 mb-4">Distribution breakdown</p>
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie data={analytics.statusPie} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} dataKey="value">
-                  {analytics.statusPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", fontSize: "12px" }} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="space-y-1.5 mt-2">
-              {analytics.statusPie.length === 0 && (
-                <p className="text-xs text-white/35">No candidate distribution yet. Add candidates and run calls to populate this chart.</p>
-              )}
-              {analytics.statusPie.map((d, i) => (
-                <div key={d.name} className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1.5 text-white/50">
-                     <span className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
-                     {d.name}
-                  </span>
-                  <span className="text-white/70 font-medium">{d.value}</span>
+            {/* KPI */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {analytics.kpiMetrics.map((m) => (
+                <div key={m.label} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3 bg-gray-100">
+                    <m.icon className="w-4 h-4 text-gray-600" />
+                  </div>
+                  <p className="text-xl font-semibold">{m.value}</p>
+                  <p className="text-xs text-gray-500">{m.label}</p>
+                  <p className="text-[11px] text-gray-400 mt-1">{m.sub}</p>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Charts Row 2 */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Role-wise funnel */}
-          <div className="bg-[#13131f] border border-white/5 rounded-2xl p-5">
-            <h2 className="text-sm font-semibold text-white mb-1">Hiring Funnel by Role</h2>
-            <p className="text-xs text-white/40 mb-4">Applicants → Screened → Shortlisted</p>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={analytics.roleDistribution} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
-                <XAxis type="number" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="name" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} axisLine={false} tickLine={false} width={80} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="applicants" name="Applied" fill="#6366f1" opacity={0.5} radius={[0, 3, 3, 0]} />
-                <Bar dataKey="screened" name="Screened" fill="#8b5cf6" opacity={0.7} radius={[0, 3, 3, 0]} />
-                <Bar dataKey="shortlisted" name="Shortlisted" fill="#10b981" radius={[0, 3, 3, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Score distribution */}
-          <div className="bg-[#13131f] border border-white/5 rounded-2xl p-5">
-            <h2 className="text-sm font-semibold text-white mb-1">AI Score Distribution</h2>
-            <p className="text-xs text-white/40 mb-4">Candidate screening score ranges</p>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={analytics.scoreDistribution} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="range" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="count" name="Candidates" radius={[4, 4, 0, 0]}>
-                  {analytics.scoreDistribution.map((entry, index) => {
-                    const fills = ["#ef4444", "#f97316", "#f59e0b", "#6366f1", "#10b981"];
-                    return <Cell key={index} fill={fills[index % fills.length]} />;
-                  })}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Impact Section */}
-        <div className="bg-gradient-to-br from-indigo-600/10 to-violet-600/10 border border-indigo-500/20 rounded-2xl p-6">
-          <h2 className="text-sm font-semibold text-white mb-4">📈 Business Impact Summary</h2>
-          <div className="grid grid-cols-3 gap-6">
-            {analytics.impactSummary.map((item) => (
-              <div key={item.title} className="space-y-1">
-                <p className={`text-3xl font-bold ${item.color}`}>{item.value}</p>
-                <p className="text-sm font-medium text-white">{item.title}</p>
-                <p className="text-xs text-white/40">{item.description}</p>
+  
+            {/* Charts Row 1 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  
+              {/* Monthly */}
+              <div className="md:col-span-2 bg-white border border-gray-200 rounded-xl p-5">
+                <h2 className="text-sm font-semibold mb-1">Monthly Screening Trend</h2>
+                <p className="text-xs text-gray-500 mb-4">4-month overview</p>
+  
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={analytics.monthlyTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="calls" stroke="#14b8a6" strokeWidth={2} />
+                    <Line type="monotone" dataKey="screened" stroke="#6366f1" strokeWidth={2} />
+                    <Line type="monotone" dataKey="shortlisted" stroke="#10b981" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-            ))}
-          </div>
-        </div>
-        </>
+  
+              {/* Pie */}
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <h2 className="text-sm font-semibold mb-1">Candidate Status</h2>
+                <p className="text-xs text-gray-500 mb-4">Distribution</p>
+  
+                <ResponsiveContainer width="100%" height={160}>
+                  <PieChart>
+                    <Pie data={analytics.statusPie} dataKey="value" innerRadius={40} outerRadius={65}>
+                      {analytics.statusPie.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+  
+            </div>
+  
+            {/* Charts Row 2 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  
+              {/* Funnel */}
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <h2 className="text-sm font-semibold mb-1">Hiring Funnel</h2>
+                <p className="text-xs text-gray-500 mb-4">Applicants → Shortlisted</p>
+  
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={analytics.roleDistribution} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={80} />
+                    <Tooltip />
+                    <Bar dataKey="applicants" fill="#14b8a6" />
+                    <Bar dataKey="screened" fill="#6366f1" />
+                    <Bar dataKey="shortlisted" fill="#10b981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+  
+              {/* Score */}
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <h2 className="text-sm font-semibold mb-1">Score Distribution</h2>
+                <p className="text-xs text-gray-500 mb-4">AI score ranges</p>
+  
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={analytics.scoreDistribution}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                    <XAxis dataKey="range" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#14b8a6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+  
+            </div>
+  
+            {/* IMPACT */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h2 className="text-sm font-semibold mb-4">Business Impact</h2>
+  
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {analytics.impactSummary.map((item) => (
+                  <div key={item.title} className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-teal-600">{item.value}</p>
+                    <p className="text-sm font-medium">{item.title}</p>
+                    <p className="text-xs text-gray-500">{item.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -117,58 +117,71 @@ export default function Header({ title, subtitle }: HeaderProps) {
   return (
     <header
       className={cn(
-        "fixed top-0 right-0 h-16 bg-[#0b0b14]/90 backdrop-blur-xl border-b border-white/5 z-30 flex items-center px-6 gap-4 transition-all duration-300",
-        sidebarOpen ? "left-60" : "left-[68px]"
+        "fixed top-0 right-0 h-16 bg-white border-b border-gray-200 z-30 flex items-center px-6 gap-4 transition-all duration-300",
+        sidebarOpen ? "left-64" : "left-[72px]"
       )}
     >
+      {/* TITLE */}
       <div className="flex-1">
-        <h1 className="text-base font-semibold text-white">{title}</h1>
-        {subtitle && <p className="text-xs text-white/40">{subtitle}</p>}
+        <h1 className="text-base font-semibold text-gray-900">{title}</h1>
+        {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
       </div>
-
+  
+      {/* ACTIVE CALL */}
       {activeCall && (
-        <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-full px-3 py-1.5">
+        <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-3 py-1.5">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
           </span>
-          <span className="text-xs text-green-400 font-medium">Interviewing {activeCall.candidateName}</span>
+          <span className="text-xs text-green-600 font-medium">
+            Interviewing {activeCall.candidateName}
+          </span>
         </div>
       )}
-
+  
+      {/* STATUS */}
       <div
         className={cn(
-          "flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border",
+          "flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full border",
           isConfigured
-            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-            : "bg-orange-500/10 text-orange-400 border-orange-500/20"
+            ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+            : "bg-amber-50 text-amber-600 border-amber-200"
         )}
       >
         {isConfigured ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-        {isConfigured ? "Bolna Connected" : "Setup Required"}
+        {isConfigured ? "Connected" : "Setup Required"}
       </div>
-
-      <button className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all">
+  
+      {/* SEARCH */}
+      <button className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100">
         <Search className="w-4 h-4" />
       </button>
-
-      <button className="relative w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all">
+  
+      {/* NOTIFICATIONS */}
+      <button className="relative w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100">
         <Bell className="w-4 h-4" />
-        <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-500 rounded-full"></span>
+        <span className="absolute top-1 right-1 w-2 h-2 bg-teal-500 rounded-full"></span>
       </button>
-
-      <div className="flex items-center gap-3 pl-2 border-l border-white/10">
+  
+      {/* USER */}
+      <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
         <div className="text-right hidden sm:block">
-          <p className="text-sm font-medium text-white">{currentUser?.name || "Recruiter"}</p>
-          <p className="text-xs text-white/35">{currentUser?.email || ""}</p>
+          <p className="text-sm font-medium text-gray-900">
+            {currentUser?.name || "Recruiter"}
+          </p>
+          <p className="text-xs text-gray-500">
+            {currentUser?.email || ""}
+          </p>
         </div>
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">
+  
+        <div className="w-9 h-9 rounded-full bg-teal-600 flex items-center justify-center text-xs font-bold text-white">
           {initials}
         </div>
+  
         <button
           onClick={handleLogout}
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
-          aria-label="Log out"
+          className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
         >
           <LogOut className="w-4 h-4" />
         </button>
