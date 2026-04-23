@@ -97,161 +97,184 @@ export default function AddJobModal({ onClose, onCreated }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#13131f] border border-white/10 rounded-2xl w-full max-w-2xl mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+  
+      <div className="bg-white border border-gray-200 rounded-2xl w-full max-w-2xl mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+  
+        {/* HEADER */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div>
-            <h2 className="text-base font-semibold text-white">Create Job</h2>
-            <p className="text-xs text-white/40 mt-0.5">Automate or manually setup structured pipeline tracking.</p>
+            <h2 className="text-lg font-semibold text-gray-900">Create Job</h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Auto-fill using JD or manually enter job details
+            </p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all">
+  
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
-
-        <div className="px-6 py-5 border-b border-white/5 bg-indigo-500/5">
-          <div className="flex items-start gap-4">
-             <div className="flex-1">
-               <label className="block text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2 flex items-center gap-2">
-                 <Sparkles className="w-3.5 h-3.5" />
-                 Smart JD Auto-Fill
-               </label>
-               <textarea
-                 rows={3}
-                 placeholder="Paste your full Job Description here..."
-                 value={jdText}
-                 onChange={(e) => setJdText(e.target.value)}
-                 className="w-full bg-[#0b0b14] border border-indigo-500/30 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 resize-none shadow-inner"
-               />
-             </div>
-             <div className="flex flex-col gap-2 mt-6">
-               <button
-                 type="button"
-                 disabled={parsing}
-                 onClick={() => handleParseJD()}
-                 className="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold px-4 py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
-               >
-                 {parsing ? <Loader className="w-4 h-4 animate-spin" /> : <FileMinus className="w-4 h-4" />}
-                 Extract Text
-               </button>
-               <input
-                 type="file"
-                 accept=".pdf"
-                 className="hidden"
-                 id="jd-file"
-                 onChange={(e) => {
-                   const file = e.target.files?.[0];
-                   if (file) handleParseJD(file);
-                 }}
-               />
-               <label
-                 htmlFor="jd-file"
-                 className="cursor-pointer flex-shrink-0 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white/80 border border-white/10 text-xs font-semibold px-4 py-3 rounded-xl transition-all flex items-center justify-center gap-2"
-               >
-                 <FileUp className="w-4 h-4" />
-                 Upload PDF
-               </label>
-             </div>
+  
+        {/* JD SECTION */}
+        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+  
+          <label className="text-xs font-semibold text-gray-600 mb-2 flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+            Smart JD Auto-Fill
+          </label>
+  
+          <div className="flex gap-3 flex-wrap">
+  
+            <textarea
+              rows={3}
+              placeholder="Paste your job description here..."
+              value={jdText}
+              onChange={(e) => setJdText(e.target.value)}
+              className="flex-1 min-w-[200px] bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 resize-none"
+            />
+  
+            <div className="flex flex-col gap-2">
+  
+              <button
+                type="button"
+                disabled={parsing}
+                onClick={() => handleParseJD()}
+                className="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-lg flex items-center gap-2"
+              >
+                {parsing ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileMinus className="w-4 h-4" />
+                )}
+                Extract
+              </button>
+  
+              <input
+                type="file"
+                accept=".pdf"
+                className="hidden"
+                id="jd-file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleParseJD(file);
+                }}
+              />
+  
+              <label
+                htmlFor="jd-file"
+                className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-4 py-2.5 rounded-lg flex items-center gap-2 justify-center"
+              >
+                <FileUp className="w-4 h-4" />
+                Upload PDF
+              </label>
+  
+            </div>
           </div>
         </div>
-
+  
+        {/* FORM */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+  
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-white/50 mb-1.5">Title</label>
-              <input
-                required
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500/50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-white/50 mb-1.5">Department</label>
-              <input
-                required
-                value={form.department}
-                onChange={(e) => setForm({ ...form, department: e.target.value })}
-                className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500/50"
-              />
-            </div>
+            <input
+              required
+              placeholder="Job Title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm"
+            />
+  
+            <input
+              required
+              placeholder="Department"
+              value={form.department}
+              onChange={(e) => setForm({ ...form, department: e.target.value })}
+              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm"
+            />
           </div>
-
+  
           <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-white/50 mb-1.5">Location</label>
-              <input
-                required
-                value={form.location}
-                onChange={(e) => setForm({ ...form, location: e.target.value })}
-                className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500/50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-white/50 mb-1.5">Type</label>
-              <select
-                value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500/50"
-              >
-                <option value="Full-time">Full-time</option>
-                <option value="Part-time">Part-time</option>
-                <option value="Contract">Contract</option>
-                <option value="Internship">Internship</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-white/50 mb-1.5">Openings</label>
-              <input
-                type="number"
-                min={1}
-                value={form.openings}
-                onChange={(e) => setForm({ ...form, openings: Number(e.target.value) })}
-                className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500/50"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-white/50 mb-1.5">Salary Range</label>
             <input
               required
-              value={form.salaryRange}
-              onChange={(e) => setForm({ ...form, salaryRange: e.target.value })}
-              placeholder="18-24 LPA"
-              className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500/50"
+              placeholder="Location"
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm"
             />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-white/50 mb-1.5">Skills</label>
+  
+            <select
+              value={form.type}
+              onChange={(e) => setForm({ ...form, type: e.target.value })}
+              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm"
+            >
+              <option>Full-time</option>
+              <option>Part-time</option>
+              <option>Contract</option>
+              <option>Internship</option>
+            </select>
+  
             <input
-              value={form.skills}
-              onChange={(e) => setForm({ ...form, skills: e.target.value })}
-              placeholder="React, TypeScript, Next.js"
-              className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500/50"
+              type="number"
+              min={1}
+              value={form.openings}
+              onChange={(e) =>
+                setForm({ ...form, openings: Number(e.target.value) })
+              }
+              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm"
             />
           </div>
-
-          <div>
-            <label className="block text-xs font-medium text-white/50 mb-1.5">Description (Optional manual trim)</label>
-            <textarea
-              required
-              rows={3}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full bg-[#0b0b14] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500/50 resize-none"
-            />
-          </div>
-
+  
+          <input
+            required
+            placeholder="Salary Range (e.g. 18-24 LPA)"
+            value={form.salaryRange}
+            onChange={(e) =>
+              setForm({ ...form, salaryRange: e.target.value })
+            }
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm"
+          />
+  
+          <input
+            placeholder="Skills (comma separated)"
+            value={form.skills}
+            onChange={(e) => setForm({ ...form, skills: e.target.value })}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm"
+          />
+  
+          <textarea
+            required
+            rows={3}
+            placeholder="Job Description"
+            value={form.description}
+            onChange={(e) =>
+              setForm({ ...form, description: e.target.value })
+            }
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm resize-none"
+          />
+  
+          {/* ACTIONS */}
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 bg-white/5 hover:bg-white/10 text-white/70 text-sm font-medium py-2.5 rounded-xl transition-colors">
+  
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm py-2.5 rounded-lg"
+            >
               Cancel
             </button>
-            <button type="submit" disabled={loading} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-500/20 disabled:opacity-50 flex items-center justify-center gap-2">
+  
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium py-2.5 rounded-lg flex items-center justify-center gap-2"
+            >
               {loading && <Loader className="w-4 h-4 animate-spin" />}
               Create Job
             </button>
+  
           </div>
         </form>
       </div>
