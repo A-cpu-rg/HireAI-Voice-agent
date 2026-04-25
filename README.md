@@ -104,7 +104,7 @@ FINAL SCORE = (60 + (8+7+7+8)*2) / 10 = 78/100
 Recommendation:  SHORTLIST
 Confidence: HIGH (resume + call aligned)
 Next Step: Schedule technical round
-```
+
 
 **Decision Logic:**
 - **80-100:** Shortlist immediately

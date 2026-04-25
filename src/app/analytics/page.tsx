@@ -235,10 +235,9 @@ export default function Analytics() {
             {/* Charts Row 1 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
   
-              {/* Monthly */}
               <div className="md:col-span-2 bg-white border border-gray-200 rounded-xl p-5">
                 <h2 className="text-sm font-semibold mb-1">Monthly Screening Trend</h2>
-                <p className="text-xs text-gray-500 mb-4">4-month overview</p>
+                <p className="text-xs text-gray-500 mb-4">4-month overvieW</p>
   
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={analytics.monthlyTrend}>
