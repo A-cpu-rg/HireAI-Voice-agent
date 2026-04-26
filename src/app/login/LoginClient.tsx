@@ -108,14 +108,14 @@ export default function LoginClient() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#f6f8fb]">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-[#f6f8fb]">
   
       {/* LEFT SIDE */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-8">
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 sm:px-8 py-10 lg:py-0">
         <div className="w-full max-w-md">
   
           {/* Brand */}
-          <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-xl bg-teal-700 flex items-center justify-center shadow-md">
                 <Bot className="w-5 h-5 text-white" />
@@ -126,21 +126,21 @@ export default function LoginClient() {
             </div>
   
             <span className="text-xs text-gray-400">
-              by <span className="font-medium text-gray-600">NavisLab</span>
+              by <span className="font-medium text-gray-600">NavisLabs</span>
             </span>
           </div>
   
           {/* Heading */}
-          <h2 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             {mode === "login" ? "Welcome back 👋" : "Create your account"}
           </h2>
   
-          <p className="text-gray-500 mb-8 text-sm leading-relaxed">
+          <p className="text-gray-500 mb-6 sm:mb-8 text-sm leading-relaxed">
             Intelligent hiring powered by AI-driven screening & decision systems.
           </p>
   
           {/* FORM */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
   
             {mode === "register" && (
               <div>
@@ -149,11 +149,10 @@ export default function LoginClient() {
                 </label>
                 <input
                   ref={nameRef}
-                  type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
-                  className="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 caret-teal-600 rounded-lg px-4 py-3 text-sm shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+                  className="w-full border border-gray-300 bg-white text-gray-900 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                 />
               </div>
             )}
@@ -162,11 +161,10 @@ export default function LoginClient() {
               <label className="text-xs text-gray-500 mb-1 block">Email</label>
               <input
                 ref={emailRef}
-                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
-                className="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 caret-teal-600 rounded-lg px-4 py-3 text-sm shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+                className="w-full border border-gray-300 bg-white text-gray-900 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
               />
             </div>
   
@@ -174,18 +172,20 @@ export default function LoginClient() {
               <label className="text-xs text-gray-500 mb-1 block">
                 Password
               </label>
+  
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 caret-teal-600 rounded-lg px-4 py-3 pr-10 text-sm shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+                  className="w-full border border-gray-300 bg-white text-gray-900 rounded-lg px-4 py-3 pr-10 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                 />
+  
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-3 text-gray-400"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -196,7 +196,7 @@ export default function LoginClient() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-teal-800 hover:bg-teal-900 text-white py-3 rounded-lg font-medium flex justify-center items-center gap-2 shadow-md hover:shadow-lg transition-all"
+              className="w-full bg-teal-700 hover:bg-teal-800 text-white py-3 rounded-lg font-medium flex justify-center items-center gap-2 transition"
             >
               {loading && <Loader className="w-4 h-4 animate-spin" />}
               {mode === "login" ? "Sign In" : "Create Account"}
@@ -204,19 +204,19 @@ export default function LoginClient() {
           </form>
   
           {/* Divider */}
-          <div className="my-6 flex items-center gap-3 text-gray-400 text-xs">
+          <div className="my-5 flex items-center gap-3 text-gray-400 text-xs">
             <div className="flex-1 h-px bg-gray-200" />
             OR
             <div className="flex-1 h-px bg-gray-200" />
           </div>
   
           {/* Google */}
-          <button className="w-full border border-gray-300 py-3 rounded-lg text-sm flex justify-center gap-2 hover:bg-gray-50 transition shadow-sm">
+          <button className="w-full border border-gray-300 py-3 rounded-lg text-sm hover:bg-gray-50 transition">
             Continue with Google
           </button>
   
           {/* Switch */}
-          <p className="text-center text-sm mt-6 text-gray-500">
+          <p className="text-center text-sm mt-5 text-gray-500">
             {mode === "login" ? (
               <>
                 Don’t have an account?{" "}
@@ -242,65 +242,38 @@ export default function LoginClient() {
         </div>
       </div>
   
-      {/* RIGHT SIDE (PREMIUM BRAND PANEL) */}
-      <div className="hidden lg:flex w-1/2 relative bg-gradient-to-br from-[#0f172a] via-[#0f766e] to-[#0d9488] text-white p-14 flex-col justify-center overflow-hidden">
+      {/* RIGHT SIDE */}
+      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-[#0f172a] via-[#0f766e] to-[#0d9488] text-white p-10 xl:p-14 flex-col justify-center relative overflow-hidden">
   
-        {/* glow */}
-        <div className="absolute w-[500px] h-[500px] bg-teal-400/20 blur-[140px] top-[-150px] right-[-100px]" />
-  
-        {/* subtle pattern */}
-        <div className="absolute inset-0 opacity-[0.04] bg-[radial-gradient(circle,white_1px,transparent_1px)] [background-size:20px_20px]" />
-  
-        {/* small branding */}
         <p className="text-xs tracking-widest text-white/50 mb-6">
           NAVISLABS
         </p>
   
-        {/* headline */}
-        <h2 className="text-4xl font-bold mb-6 leading-tight max-w-md">
+        <h2 className="text-3xl xl:text-4xl font-bold mb-6 leading-tight max-w-md">
           Intelligence layer for modern hiring
         </h2>
   
-        {/* description */}
-        <p className="text-lg text-white/80 mb-10 max-w-md leading-relaxed">
+        <p className="text-base xl:text-lg text-white/80 mb-8 max-w-md">
           HireAI combines AI calls, resume intelligence, and structured scoring
-          to help teams evaluate candidates faster and make better decisions.
+          to help teams evaluate candidates faster.
         </p>
   
-        {/* product visual card */}
-        <div className="bg-white/10 border border-white/10 rounded-2xl p-6 backdrop-blur mb-10 max-w-md shadow-lg">
-  
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm text-white/70">AI Screening</span>
-            <span className="text-xs bg-white/20 px-2 py-1 rounded-md">
-              LIVE
-            </span>
-          </div>
-  
+        <div className="bg-white/10 border border-white/10 rounded-2xl p-5 backdrop-blur max-w-md">
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs">
-                    AI
-                  </div>
-                  <div>
-                    <p className="text-sm">Candidate #{i}</p>
-                    <p className="text-xs text-white/50">Analyzed</p>
-                  </div>
-                </div>
-                <span className="text-xs text-emerald-300">✔</span>
+              <div key={i} className="flex justify-between text-sm">
+                <span>Candidate #{i}</span>
+                <span className="text-emerald-300">✔</span>
               </div>
             ))}
           </div>
         </div>
   
-        {/* footer */}
-        <p className="text-sm text-white/50">
-          Built by NavisLab • AI-native hiring workflow
+        <p className="text-sm text-white/50 mt-8">
+          Built by NavisLabs
         </p>
-  
       </div>
+  
     </div>
   );
 }
