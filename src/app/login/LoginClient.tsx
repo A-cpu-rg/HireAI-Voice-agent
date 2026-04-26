@@ -108,14 +108,14 @@ export default function LoginClient() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f6f8fb] lg:bg-transparent">
+    <div className="min-h-screen flex bg-[#f6f8fb]">
   
       {/* LEFT SIDE */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        <div className="w-full max-w-md lg:max-w-lg">
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-8">
+        <div className="w-full max-w-md">
   
           {/* Brand */}
-          <div className="flex items-center justify-between mb-6 sm:mb-8 lg:mb-10">
+          <div className="flex items-center justify-between mb-10">
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-xl bg-teal-700 flex items-center justify-center shadow-md">
                 <Bot className="w-5 h-5 text-white" />
@@ -129,28 +129,18 @@ export default function LoginClient() {
               by <span className="font-medium text-gray-600">NavisLab</span>
             </span>
           </div>
-
-          <div className="lg:hidden mb-6 rounded-2xl bg-gradient-to-br from-slate-900 via-teal-800 to-teal-700 p-5 text-white shadow-xl">
-            <p className="text-[11px] tracking-[0.28em] text-white/55 mb-3">AI HIRING WORKFLOW</p>
-            <h3 className="text-xl font-semibold leading-tight mb-2">
-              Resume parsing, AI calls, and recruiter decisions in one flow.
-            </h3>
-            <p className="text-sm text-white/75 leading-relaxed">
-              Sign in to manage candidates, start screening calls, and review interview results from a mobile-friendly dashboard.
-            </p>
-          </div>
   
           {/* Heading */}
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 tracking-tight">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">
             {mode === "login" ? "Welcome back 👋" : "Create your account"}
           </h2>
   
-          <p className="text-gray-500 mb-6 sm:mb-8 text-sm leading-relaxed">
+          <p className="text-gray-500 mb-8 text-sm leading-relaxed">
             Intelligent hiring powered by AI-driven screening & decision systems.
           </p>
   
           {/* FORM */}
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
   
             {mode === "register" && (
               <div>
@@ -253,7 +243,7 @@ export default function LoginClient() {
       </div>
   
       {/* RIGHT SIDE (PREMIUM BRAND PANEL) */}
-      <div className="hidden lg:flex w-1/2 relative bg-gradient-to-br from-[#0f172a] via-[#0f766e] to-[#0d9488] text-white p-10 xl:p-14 flex-col justify-center overflow-hidden">
+      <div className="hidden lg:flex w-1/2 relative bg-gradient-to-br from-[#0f172a] via-[#0f766e] to-[#0d9488] text-white p-14 flex-col justify-center overflow-hidden">
   
         {/* glow */}
         <div className="absolute w-[500px] h-[500px] bg-teal-400/20 blur-[140px] top-[-150px] right-[-100px]" />
@@ -267,12 +257,12 @@ export default function LoginClient() {
         </p>
   
         {/* headline */}
-        <h2 className="text-3xl xl:text-4xl font-bold mb-6 leading-tight max-w-md">
+        <h2 className="text-4xl font-bold mb-6 leading-tight max-w-md">
           Intelligence layer for modern hiring
         </h2>
   
         {/* description */}
-        <p className="text-base xl:text-lg text-white/80 mb-10 max-w-md leading-relaxed">
+        <p className="text-lg text-white/80 mb-10 max-w-md leading-relaxed">
           HireAI combines AI calls, resume intelligence, and structured scoring
           to help teams evaluate candidates faster and make better decisions.
         </p>
