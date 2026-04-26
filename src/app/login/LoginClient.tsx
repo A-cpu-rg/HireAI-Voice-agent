@@ -2,13 +2,17 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Bot, Loader, Eye, EyeOff } from "lucide-react";
+import { Bot, Loader, Eye, EyeOff, MailCheck, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function LoginClient() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [resending, setResending] = useState(false);
+  const hasPendingVerification = Boolean(pendingVerificationEmail);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -29,6 +33,36 @@ export default function LoginClient() {
 
     return () => clearTimeout(timer);
   }, [mode]);
+
+  const handleResendVerification = async (emailToUse?: string) => {
+    const targetEmail = emailToUse || pendingVerificationEmail || email;
+    if (!targetEmail) {
+      toast.error("Enter your email first.");
+      return;
+    }
+
+    setResending(true);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: targetEmail }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to resend verification email.");
+      }
+
+      setPendingVerificationEmail(targetEmail);
+      setPreviewUrl(data.previewUrl || "");
+      toast.success("Verification email sent.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to resend verification email.");
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,20 +115,27 @@ export default function LoginClient() {
       }
 
       if (!res.ok) {
-        throw new Error(
-          mode === "login"
-            ? "Invalid credentials"
-            : "Failed to create account"
-        );
+        if (data.code === "EMAIL_NOT_VERIFIED") {
+          setPendingVerificationEmail(email);
+        }
+        throw new Error(data.error || (mode === "login" ? "Invalid credentials" : "Failed to create account"));
       }
 
       if (mode === "login") {
         toast.success("Welcome back 🚀");
         router.push("/");
       } else {
-        toast.success("Account created! Please login.");
+        setPendingVerificationEmail(email);
+        setPreviewUrl(data.previewUrl || "");
+        toast.success("Account created. Verify your email to continue.");
         setMode("login");
         setPassword("");
+
+        if (data.previewUrl) {
+          setTimeout(() => {
+            window.location.href = data.previewUrl;
+          }, 600);
+        }
       }
     } catch (error: any) {
       if (error.name === "AbortError") {
@@ -132,12 +173,54 @@ export default function LoginClient() {
   
           {/* Heading */}
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            {mode === "login" ? "Welcome back 👋" : "Create your account"}
+            {hasPendingVerification
+              ? "Check your email"
+              : mode === "login"
+                ? "Welcome back 👋"
+                : "Create your account"}
           </h2>
   
           <p className="text-gray-500 mb-6 sm:mb-8 text-sm leading-relaxed">
-            Intelligent hiring powered by AI-driven screening & decision systems.
+            {hasPendingVerification
+              ? "Verify your email once, then sign in and start using HireAI."
+              : "Intelligent hiring powered by AI-driven screening & decision systems."}
           </p>
+
+          {pendingVerificationEmail && (
+            <div className="mb-6 rounded-2xl border border-teal-200 bg-teal-50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 rounded-xl bg-teal-100 p-2 text-teal-700">
+                  <MailCheck className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-teal-900">Verify your email</p>
+                  <p className="mt-1 text-xs leading-relaxed text-teal-800/80">
+                    We sent a verification link to <span className="font-medium">{pendingVerificationEmail}</span>. Open that link first, then sign in.
+                  </p>
+                  <div className="mt-3 flex items-center gap-3 flex-wrap">
+                    {previewUrl && (
+                      <a
+                        href={previewUrl}
+                        className="inline-flex items-center gap-2 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-medium px-3 py-2 transition"
+                      >
+                        <MailCheck className="w-3.5 h-3.5" />
+                        Verify now
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleResendVerification(pendingVerificationEmail)}
+                      disabled={resending}
+                      className="inline-flex items-center gap-2 rounded-lg border border-teal-300 bg-white hover:bg-teal-100 disabled:opacity-50 text-teal-800 text-xs font-medium px-3 py-2 transition"
+                    >
+                      {resending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      Resend verification
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
   
           {/* FORM */}
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">

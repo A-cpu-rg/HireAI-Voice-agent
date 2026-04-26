@@ -21,6 +21,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User not found, please create a new account" }, { status: 404 });
     }
 
+    if (!user.emailVerifiedAt) {
+      return NextResponse.json({ error: "Please verify your email before logging in.", code: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
+
     // Verify Password
     const isValid = verifyPassword(password, user.passwordHash);
     

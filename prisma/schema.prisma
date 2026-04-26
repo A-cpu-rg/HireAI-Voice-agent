@@ -8,103 +8,107 @@ datasource db {
 }
 
 model User {
-  id         String      @id @default(uuid())
-  email      String      @unique
-  name       String?
-  passwordHash String?
-  apiKey     String?
-  agentId    String?
-  candidates Candidate[]
-  callLogs   CallLog[]
-  jobs       Job[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id                         String      @id @default(uuid())
+  email                      String      @unique
+  name                       String?
+  passwordHash               String?
+  emailVerifiedAt            DateTime?
+  verificationTokenHash      String?
+  verificationTokenExpiresAt DateTime?
+  apiKey                     String?
+  agentId                    String?
+  candidates                 Candidate[]
+  callLogs                   CallLog[]
+  jobs                       Job[]
+  createdAt                  DateTime    @default(now())
+  updatedAt                  DateTime    @updatedAt
 }
 
 model Candidate {
-  id              String            @id @default(uuid())
-  name            String
-  email           String
-  phone           String
-  role            String
-  experience      Int
-  callStatus      String            @default("pending") // pending, calling, processing, completed, failed
-  decisionStatus  String            @default("undecided") // undecided, shortlisted, rejected
-  score           Int?
-  matchScore      Int?
-  callId          String?
-  scheduledAt     DateTime?
-  completedAt     DateTime?
-  resumeUrl       String?
-  location        String
-  appliedAt       DateTime          @default(now())
-  avatarColor     String
-  tags            String?           // Stored as JSON string
-  isDemo          Boolean           @default(false)
-  jobId           String?
-  
+  id             String    @id @default(uuid())
+  name           String
+  email          String
+  phone          String
+  role           String
+  experience     Int
+  callStatus     String    @default("pending") // pending, calling, processing, completed, failed
+  decisionStatus String    @default("undecided") // undecided, shortlisted, rejected
+  score          Int?
+  matchScore     Int?
+  callId         String?
+  scheduledAt    DateTime?
+  completedAt    DateTime?
+  resumeUrl      String?
+  location       String
+  appliedAt      DateTime  @default(now())
+  avatarColor    String
+  tags           String? // Stored as JSON string
+  isDemo         Boolean   @default(false)
+  jobId          String?
+
   screeningResult ScreeningResult?
   transcript      TranscriptMessage[]
   callLogs        CallLog[]
-  job             Job?              @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  
+  job             Job?                @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
   // Multitenancy
-  user            User              @relation(fields: [userId], references: [id])
-  userId          String
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
   // we do not want email uniqueness to cross tenants, uniqueness can be (email, userId) combo.
   @@unique([email, userId])
 }
 
 model ScreeningResult {
-  id                  String     @id @default(uuid())
-  candidateId         String     @unique
-  candidate           Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  
+  id          String    @id @default(uuid())
+  candidateId String    @unique
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
   technicalScore      Int
   communicationScore  Int
   problemSolvingScore Int
   cultureFitScore     Int
   overallScore        Int
-  
-  strengths           String     // JSON array
-  concerns            String     // JSON array
-  recommendation      String
-  summary             String
-  keySkills           String     // JSON array
-  availability        String
-  salaryExpectation   String
+
+  strengths         String // JSON array
+  concerns          String // JSON array
+  recommendation    String
+  summary           String
+  keySkills         String // JSON array
+  availability      String
+  salaryExpectation String
 }
 
 model TranscriptMessage {
-  id          String     @id @default(uuid())
+  id          String    @id @default(uuid())
   candidateId String
-  candidate   Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  role        String     // "agent" | "candidate"
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  role        String // "agent" | "candidate"
   text        String
   timestamp   String
 }
 
 model Job {
-  id          String   @id @default(uuid())
+  id          String      @id @default(uuid())
   title       String
   department  String
   location    String
   type        String
   openings    Int
-  applicants  Int      @default(0)
-  screened    Int      @default(0)
-  shortlisted Int      @default(0)
-  status      String   @default("active")
-  createdAt   DateTime @default(now())
+  applicants  Int         @default(0)
+  screened    Int         @default(0)
+  shortlisted Int         @default(0)
+  status      String      @default("active")
+  createdAt   DateTime    @default(now())
   description String
-  skills      String   // JSON array
+  skills      String // JSON array
   salaryRange String
   smartPrompt String?
   candidates  Candidate[]
-  
+
   // Multitenancy
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 }
 
 model CallLog {
@@ -118,8 +122,8 @@ model CallLog {
   startedAt     DateTime  @default(now())
   score         Int?
   agentId       String
-  
+
   // Multitenancy
-  user          User      @relation(fields: [userId], references: [id])
-  userId        String
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 }

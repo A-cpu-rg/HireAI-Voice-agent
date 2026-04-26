@@ -65,9 +65,15 @@ export async function getSessionUser() {
   }
 
   try {
-    return await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: userId },
     });
+
+    if (!user?.emailVerifiedAt) {
+      return null;
+    }
+
+    return user;
   } catch (error) {
     console.error("Auth error:", error);
     return null;

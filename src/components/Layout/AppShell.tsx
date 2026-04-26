@@ -12,7 +12,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { setCurrentUser } = useApp();
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const isAuthPage = pathname === "/login";
+  const isAuthPage = pathname === "/login" || pathname === "/verify-email";
 
   useEffect(() => {
     let cancelled = false;

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const SESSION_COOKIE = "hireai_session";
 const SESSION_SECRET = process.env.AUTH_SECRET || "dev-hireai-session-secret";
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/verify-email"];
 
 async function hashValue(value: string) {
   const encoder = new TextEncoder();
