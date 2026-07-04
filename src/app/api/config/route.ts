@@ -1,50 +1,33 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getSessionUser } from '@/lib/auth';
+import { assertSameOrigin, json, parseBody, requireUser, withRoute } from "@/lib/api";
+import { prisma } from "@/lib/prisma";
+import { saveConfigSchema } from "@/lib/schemas";
 
-export async function GET(req: Request) {
-  try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+export const GET = withRoute(async () => {
+  const user = await requireUser();
 
-    const hasKey = !!user.apiKey;
-    const hasAgent = !!user.agentId;
+  return json({
+    hasKey: Boolean(user.apiKey),
+    hasAgent: Boolean(user.agentId),
+    mode: "live",
+    maskedApiKey: user.apiKey ? `${user.apiKey.slice(0, 6)}••••${user.apiKey.slice(-4)}` : "",
+    agentId: user.agentId ?? "",
+  });
+});
 
-    return NextResponse.json({
-      hasKey,
-      hasAgent,
-      mode: 'live',
-      maskedApiKey: user.apiKey ? `${user.apiKey.slice(0, 6)}••••${user.apiKey.slice(-4)}` : '',
-      agentId: user.agentId || '',
-    });
-  } catch (error) {
-    console.error("Config GET error:", error);
-    return NextResponse.json({ error: 'Failed to fetch config' }, { status: 500 });
-  }
-}
+export const POST = withRoute(async (req) => {
+  assertSameOrigin(req);
+  const user = await requireUser();
+  const { apiKey, agentId } = await parseBody(req, saveConfigSchema);
 
-export async function POST(req: Request) {
-  try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      // Preserve the existing key when the field is blank (so the masked value
+      // in the UI does not need to round-trip the real secret).
+      apiKey: apiKey?.trim() ? apiKey.trim() : user.apiKey,
+      agentId: agentId?.trim() ? agentId.trim() : user.agentId,
+    },
+  });
 
-    const { apiKey, agentId } = await req.json();
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        apiKey: apiKey?.trim() ? apiKey.trim() : user.apiKey,
-        agentId: agentId?.trim() || null,
-      },
-    });
-
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error("Config POST error:", error);
-    return NextResponse.json({ error: 'Failed to update config' }, { status: 500 });
-  }
-}
+  return json({ ok: true });
+});

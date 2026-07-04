@@ -25,11 +25,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
   const [isConfigured, setIsConfigured] = useState(false);
   const [mode, setModeState] = useState<AppMode>("live");
-  const [currentUser, setCurrentUser] = useState<{ id: string; name: string | null; email: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    name: string | null;
+    email: string;
+  } | null>(null);
   const [bolnaConfig, setBolnaConfigState] = useState<BolnaConfig>({
     apiKey: "",
     agentId: "",
-    webhookUrl: "", 
+    webhookUrl: "",
   });
 
   const setBolnaConfig = useCallback((config: BolnaConfig) => {
@@ -63,7 +67,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         currentUser,
         setCurrentUser,
         activeCallId,
-        setActiveCallId
+        setActiveCallId,
       }}
     >
       {children}

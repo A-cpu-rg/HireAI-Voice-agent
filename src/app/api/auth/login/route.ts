@@ -1,43 +1,35 @@
-import { NextResponse } from "next/server";
+import { ApiError, assertSameOrigin, getClientIp, json, parseBody, withRoute } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
-import { verifyPassword, loginUser } from "@/lib/auth";
+import { hashPassword, loginUser, verifyPassword } from "@/lib/auth";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { loginSchema } from "@/lib/schemas";
 
-export async function POST(req: Request) {
-  try {
-    const { email, password } = await req.json();
+// Precomputed hash used to equalise timing when the account does not exist, so
+// responses do not reveal which emails are registered.
+const DUMMY_HASH = hashPassword("timing-equalizer-placeholder");
 
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
-    }
+export const POST = withRoute(async (req) => {
+  assertSameOrigin(req);
+  enforceRateLimit(`login:${getClientIp(req)}`, RATE_LIMITS.auth);
 
-    const normalizedEmail = String(email).trim().toLowerCase();
+  const { email, password } = await parseBody(req, loginSchema);
 
-    // Attempt to locate user
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+  const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user || !user.passwordHash) {
-      return NextResponse.json({ error: "User not found, please create a new account" }, { status: 404 });
-    }
+  // Always run a hash comparison to keep timing uniform for missing accounts.
+  const passwordValid = user?.passwordHash
+    ? verifyPassword(password, user.passwordHash)
+    : (verifyPassword(password, DUMMY_HASH), false);
 
-    if (!user.emailVerifiedAt) {
-      return NextResponse.json({ error: "Please verify your email before logging in.", code: "EMAIL_NOT_VERIFIED" }, { status: 403 });
-    }
-
-    // Verify Password
-    const isValid = verifyPassword(password, user.passwordHash);
-    
-    if (!isValid) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
-    }
-
-    // Establish session cookies
-    await loginUser(user.id);
-
-    return NextResponse.json({ success: true, user: { id: user.id, email: user.email, name: user.name } });
-  } catch (error: any) {
-    console.error("Login Error:", error);
-    return NextResponse.json({ error: "An internal error occurred" }, { status: 500 });
+  if (!user || !passwordValid) {
+    throw ApiError.unauthorized("Invalid email or password.");
   }
-}
+
+  if (!user.emailVerifiedAt) {
+    throw new ApiError(403, "Please verify your email before logging in.", "EMAIL_NOT_VERIFIED");
+  }
+
+  await loginUser(user.id);
+
+  return json({ success: true, user: { id: user.id, email: user.email, name: user.name } });
+});

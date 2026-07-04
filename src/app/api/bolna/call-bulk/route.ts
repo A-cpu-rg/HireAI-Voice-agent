@@ -1,78 +1,87 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getSessionUser } from '@/lib/auth';
-import { BolnaService } from '@/services/bolna.service';
+import {
+  ApiError,
+  assertSameOrigin,
+  getClientIp,
+  json,
+  parseBody,
+  requireUser,
+  withRoute,
+} from "@/lib/api";
+import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { bulkCallSchema } from "@/lib/schemas";
+import { BolnaService } from "@/services/bolna.service";
 
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export async function POST(req: Request) {
-  try {
-    const user = await getSessionUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+/**
+ * Trigger outbound calls for a batch of candidates. The batch is capped
+ * (see bulkCallSchema) so it completes within a request timeout; larger
+ * campaigns should be moved to a durable queue/worker.
+ */
+export const POST = withRoute(async (req) => {
+  assertSameOrigin(req);
+  const user = await requireUser();
+  enforceRateLimit(`call-bulk:${user.id}:${getClientIp(req)}`, RATE_LIMITS.calls);
 
-    const { candidateIds } = await req.json();
+  const { candidateIds } = await parseBody(req, bulkCallSchema);
 
-    if (!user.apiKey || !user.agentId) {
-      return NextResponse.json({ error: 'Missing Bolna credentials. Configure them in Settings first.' }, { status: 400 });
-    }
-
-    if (!Array.isArray(candidateIds) || candidateIds.length === 0) {
-        return NextResponse.json({ error: 'No candidates selected' }, { status: 400 });
-    }
-
-    // Get candidates — use findMany for multi-tenant scoping
-    const candidates = await prisma.candidate.findMany({
-      where: { id: { in: candidateIds }, userId: user.id },
-      include: { job: true }
-    });
-
-    if (candidates.length === 0) return NextResponse.json({ error: 'No candidates found' }, { status: 404 });
-
-    const results = [];
-    const errors = [];
-
-    // Queue-based calling to avoid rate limit spam on Bolna APIs
-    for (const candidate of candidates) {
-      try {
-        // Call the Bolna API with injected Smart Prompt if available
-        const { call_id } = await BolnaService.triggerOutboundCall(user.apiKey, user.agentId, candidate.id, (candidate.job as any)?.smartPrompt || undefined);
-
-        // Save records
-        await prisma.$transaction([
-          prisma.callLog.create({
-            data: {
-              id: call_id,
-              candidateName: candidate.name,
-              role: candidate.role,
-              status: 'calling',
-              agentId: user.agentId,
-              candidate: { connect: { id: candidate.id } },
-              user: { connect: { id: user.id } },
-            }
-          }),
-          prisma.candidate.update({
-            where: { id: candidate.id },
-            data: { callStatus: 'calling', decisionStatus: 'undecided', callId: call_id }
-          })
-        ]);
-        
-        results.push({ candidateId: candidate.id, call_id });
-      } catch (err: any) {
-        errors.push({ candidateId: candidate.id, error: err.message });
-        
-        await prisma.candidate.update({
-            where: { id: candidate.id },
-            data: { callStatus: 'failed' }
-        });
-      }
-
-      // Small delay between calls to be safe
-      await delay(1500);
-    }
-
-    return NextResponse.json({ success: true, results, errors });
-  } catch (error: any) {
-    console.error('[Bulk Call Error]:', error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!user.apiKey || !user.agentId) {
+    throw ApiError.badRequest("Missing Bolna credentials. Configure them in Settings first.");
   }
-}
+
+  const candidates = await prisma.candidate.findMany({
+    where: { id: { in: candidateIds }, userId: user.id },
+    include: { job: true },
+  });
+  if (candidates.length === 0) throw ApiError.notFound("No matching candidates found.");
+
+  const results: { candidateId: string; callId: string }[] = [];
+  const errors: { candidateId: string; error: string }[] = [];
+
+  for (const candidate of candidates) {
+    try {
+      const { callId } = await BolnaService.triggerOutboundCall({
+        apiKey: user.apiKey,
+        agentId: user.agentId,
+        candidate,
+        smartPrompt: candidate.job?.smartPrompt ?? undefined,
+      });
+
+      await prisma.$transaction([
+        prisma.callLog.create({
+          data: {
+            id: callId,
+            candidateName: candidate.name,
+            role: candidate.role,
+            status: "calling",
+            agentId: user.agentId,
+            candidate: { connect: { id: candidate.id } },
+            user: { connect: { id: user.id } },
+          },
+        }),
+        prisma.candidate.update({
+          where: { id: candidate.id },
+          data: { callStatus: "calling", callId },
+        }),
+      ]);
+
+      results.push({ candidateId: candidate.id, callId });
+    } catch (error) {
+      logger.error("Bulk call failed for candidate", { candidateId: candidate.id, error });
+      errors.push({
+        candidateId: candidate.id,
+        error: error instanceof Error ? error.message : "Call failed",
+      });
+      await prisma.candidate.update({
+        where: { id: candidate.id },
+        data: { callStatus: "failed" },
+      });
+    }
+
+    await delay(800);
+  }
+
+  return json({ success: true, results, errors });
+});

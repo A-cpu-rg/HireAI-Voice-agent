@@ -90,13 +90,9 @@ export default function LoginClient() {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
 
-      const endpoint =
-        mode === "login" ? "/api/auth/login" : "/api/auth/register";
+      const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
 
-      const payload =
-        mode === "login"
-          ? { email, password }
-          : { name, email, password };
+      const payload = mode === "login" ? { email, password } : { name, email, password };
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -118,7 +114,9 @@ export default function LoginClient() {
         if (data.code === "EMAIL_NOT_VERIFIED") {
           setPendingVerificationEmail(email);
         }
-        throw new Error(data.error || (mode === "login" ? "Invalid credentials" : "Failed to create account"));
+        throw new Error(
+          data.error || (mode === "login" ? "Invalid credentials" : "Failed to create account")
+        );
       }
 
       if (mode === "login") {
@@ -149,38 +147,34 @@ export default function LoginClient() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[#f6f8fb]">
-  
+    <div className="flex min-h-screen flex-col bg-[#f6f8fb] lg:flex-row">
       {/* LEFT SIDE */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 sm:px-8 py-10 lg:py-0">
+      <div className="flex w-full items-center justify-center px-6 py-10 sm:px-8 lg:w-1/2 lg:py-0">
         <div className="w-full max-w-md">
-  
           {/* Brand */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-teal-700 flex items-center justify-center shadow-md">
-                <Bot className="w-5 h-5 text-white" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-700 shadow-md">
+                <Bot className="h-5 w-5 text-white" />
               </div>
-              <span className="font-semibold text-gray-900 text-lg tracking-tight">
-                HireAI
-              </span>
+              <span className="text-lg font-semibold tracking-tight text-gray-900">HireAI</span>
             </div>
-  
+
             <span className="text-xs text-gray-400">
               by <span className="font-medium text-gray-600">NavisLabs</span>
             </span>
           </div>
-  
+
           {/* Heading */}
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+          <h2 className="mb-2 text-2xl font-bold text-gray-900 sm:text-3xl">
             {hasPendingVerification
               ? "Check your email"
               : mode === "login"
                 ? "Welcome back 👋"
                 : "Create your account"}
           </h2>
-  
-          <p className="text-gray-500 mb-6 sm:mb-8 text-sm leading-relaxed">
+
+          <p className="mb-6 text-sm leading-relaxed text-gray-500 sm:mb-8">
             {hasPendingVerification
               ? "Verify your email once, then sign in and start using HireAI."
               : "Intelligent hiring powered by AI-driven screening & decision systems."}
@@ -190,20 +184,22 @@ export default function LoginClient() {
             <div className="mb-6 rounded-2xl border border-teal-200 bg-teal-50 p-4">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 rounded-xl bg-teal-100 p-2 text-teal-700">
-                  <MailCheck className="w-4 h-4" />
+                  <MailCheck className="h-4 w-4" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-teal-900">Verify your email</p>
                   <p className="mt-1 text-xs leading-relaxed text-teal-800/80">
-                    We sent a verification link to <span className="font-medium">{pendingVerificationEmail}</span>. Open that link first, then sign in.
+                    We sent a verification link to{" "}
+                    <span className="font-medium">{pendingVerificationEmail}</span>. Open that link
+                    first, then sign in.
                   </p>
-                  <div className="mt-3 flex items-center gap-3 flex-wrap">
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
                     {previewUrl && (
                       <a
                         href={previewUrl}
-                        className="inline-flex items-center gap-2 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-medium px-3 py-2 transition"
+                        className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-3 py-2 text-xs font-medium text-white transition hover:bg-teal-800"
                       >
-                        <MailCheck className="w-3.5 h-3.5" />
+                        <MailCheck className="h-3.5 w-3.5" />
                         Verify now
                       </a>
                     )}
@@ -211,9 +207,13 @@ export default function LoginClient() {
                       type="button"
                       onClick={() => handleResendVerification(pendingVerificationEmail)}
                       disabled={resending}
-                      className="inline-flex items-center gap-2 rounded-lg border border-teal-300 bg-white hover:bg-teal-100 disabled:opacity-50 text-teal-800 text-xs font-medium px-3 py-2 transition"
+                      className="inline-flex items-center gap-2 rounded-lg border border-teal-300 bg-white px-3 py-2 text-xs font-medium text-teal-800 transition hover:bg-teal-100 disabled:opacity-50"
                     >
-                      {resending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      {resending ? (
+                        <Loader className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      )}
                       Resend verification
                     </button>
                   </div>
@@ -221,102 +221,91 @@ export default function LoginClient() {
               </div>
             </div>
           )}
-  
+
           {/* FORM */}
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-  
             {mode === "register" && (
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">
-                  Full Name
-                </label>
+                <label className="mb-1 block text-xs text-gray-500">Full Name</label>
                 <input
                   ref={nameRef}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
-                  className="w-full border border-gray-300 bg-white text-gray-900 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
             )}
-  
+
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Email</label>
+              <label className="mb-1 block text-xs text-gray-500">Email</label>
               <input
                 ref={emailRef}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
-                className="w-full border border-gray-300 bg-white text-gray-900 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
-  
+
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">
-                Password
-              </label>
-  
+              <label className="mb-1 block text-xs text-gray-500">Password</label>
+
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full border border-gray-300 bg-white text-gray-900 rounded-lg px-4 py-3 pr-10 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 pr-10 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-teal-500"
                 />
-  
+
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-gray-400"
+                  className="absolute top-3 right-3 text-gray-400"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
-  
+
             {/* CTA */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-teal-700 hover:bg-teal-800 text-white py-3 rounded-lg font-medium flex justify-center items-center gap-2 transition"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-700 py-3 font-medium text-white transition hover:bg-teal-800"
             >
-              {loading && <Loader className="w-4 h-4 animate-spin" />}
+              {loading && <Loader className="h-4 w-4 animate-spin" />}
               {mode === "login" ? "Sign In" : "Create Account"}
             </button>
           </form>
-  
+
           {/* Divider */}
-          <div className="my-5 flex items-center gap-3 text-gray-400 text-xs">
-            <div className="flex-1 h-px bg-gray-200" />
+          <div className="my-5 flex items-center gap-3 text-xs text-gray-400">
+            <div className="h-px flex-1 bg-gray-200" />
             OR
-            <div className="flex-1 h-px bg-gray-200" />
+            <div className="h-px flex-1 bg-gray-200" />
           </div>
-  
+
           {/* Google */}
-          <button className="w-full border border-gray-300 py-3 rounded-lg text-sm hover:bg-gray-50 transition">
+          <button className="w-full rounded-lg border border-gray-300 py-3 text-sm transition hover:bg-gray-50">
             Continue with Google
           </button>
-  
+
           {/* Switch */}
-          <p className="text-center text-sm mt-5 text-gray-500">
+          <p className="mt-5 text-center text-sm text-gray-500">
             {mode === "login" ? (
               <>
                 Don’t have an account?{" "}
-                <button
-                  onClick={() => setMode("register")}
-                  className="text-teal-700 font-medium"
-                >
+                <button onClick={() => setMode("register")} className="font-medium text-teal-700">
                   Sign Up
                 </button>
               </>
             ) : (
               <>
                 Already have an account?{" "}
-                <button
-                  onClick={() => setMode("login")}
-                  className="text-teal-700 font-medium"
-                >
+                <button onClick={() => setMode("login")} className="font-medium text-teal-700">
                   Login
                 </button>
               </>
@@ -324,24 +313,21 @@ export default function LoginClient() {
           </p>
         </div>
       </div>
-  
+
       {/* RIGHT SIDE */}
-      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-[#0f172a] via-[#0f766e] to-[#0d9488] text-white p-10 xl:p-14 flex-col justify-center relative overflow-hidden">
-  
-        <p className="text-xs tracking-widest text-white/50 mb-6">
-          NAVISLABS
-        </p>
-  
-        <h2 className="text-3xl xl:text-4xl font-bold mb-6 leading-tight max-w-md">
+      <div className="relative hidden w-1/2 flex-col justify-center overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#0f766e] to-[#0d9488] p-10 text-white lg:flex xl:p-14">
+        <p className="mb-6 text-xs tracking-widest text-white/50">NAVISLABS</p>
+
+        <h2 className="mb-6 max-w-md text-3xl leading-tight font-bold xl:text-4xl">
           Intelligence layer for modern hiring
         </h2>
-  
-        <p className="text-base xl:text-lg text-white/80 mb-8 max-w-md">
-          HireAI combines AI calls, resume intelligence, and structured scoring
-          to help teams evaluate candidates faster.
+
+        <p className="mb-8 max-w-md text-base text-white/80 xl:text-lg">
+          HireAI combines AI calls, resume intelligence, and structured scoring to help teams
+          evaluate candidates faster.
         </p>
-  
-        <div className="bg-white/10 border border-white/10 rounded-2xl p-5 backdrop-blur max-w-md">
+
+        <div className="max-w-md rounded-2xl border border-white/10 bg-white/10 p-5 backdrop-blur">
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex justify-between text-sm">
@@ -351,12 +337,9 @@ export default function LoginClient() {
             ))}
           </div>
         </div>
-  
-        <p className="text-sm text-white/50 mt-8">
-          Built by NavisLabs
-        </p>
+
+        <p className="mt-8 text-sm text-white/50">Built by NavisLabs</p>
       </div>
-  
     </div>
   );
 }

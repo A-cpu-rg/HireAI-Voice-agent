@@ -13,7 +13,10 @@ export default function ScoreRing({ score, size = 80, strokeWidth = 6 }: ScoreRi
   const trackColor = score >= 80 ? "#10b98115" : score >= 60 ? "#f59e0b15" : "#ef444415";
 
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+    <div
+      className="relative inline-flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
       <svg width={size} height={size} className="-rotate-90">
         <circle
           cx={size / 2}
@@ -37,7 +40,7 @@ export default function ScoreRing({ score, size = 80, strokeWidth = 6 }: ScoreRi
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-lg font-bold text-white leading-none">{score}</span>
+        <span className="text-lg leading-none font-bold text-white">{score}</span>
         <span className="text-[9px] text-white/40">/ 100</span>
       </div>
     </div>

@@ -1,15 +1,66 @@
-import { prisma } from '@/lib/prisma';
+import type { Candidate } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
+import { fetchWithTimeout } from "@/lib/http";
+import type { Recommendation } from "@/lib/constants";
+
+const BOLNA_API_BASE = "https://api.bolna.ai";
+
+/** Loose shape of the Bolna webhook body — fields are provider-dependent. */
+interface BolnaWebhookPayload {
+  call_id?: string;
+  headers?: { call_id?: string };
+  data?: {
+    call_id?: string;
+    extraction?: Record<string, unknown>;
+    transcript?: unknown;
+    duration?: string;
+  };
+  extraction?: Record<string, unknown>;
+  extracted_data?: Record<string, unknown>;
+  transcript?: unknown;
+}
+
+/** Parse a value into a 0–100 integer, or null if it is not a real number. */
+function parseScore(value: unknown): number | null {
+  const n =
+    typeof value === "number" ? value : typeof value === "string" ? parseInt(value, 10) : NaN;
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function toStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((v) => String(v)).filter(Boolean);
+  if (typeof value === "string" && value.trim()) {
+    return value
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function recommendationFor(overall: number): Recommendation {
+  if (overall >= 80) return "Shortlist";
+  if (overall >= 65) return "Hold";
+  return "Reject";
+}
 
 export const BolnaService = {
-  
-  async triggerOutboundCall(apiKey: string, agentId: string, candidateId: string, smartPrompt?: string) {
-    const candidate = await prisma.candidate.findUnique({
-      where: { id: candidateId }
-    });
+  /**
+   * Trigger an outbound screening call. The caller must pass a candidate it has
+   * already loaded and authorised (tenant-scoped) — this service does no
+   * ownership checks of its own.
+   */
+  async triggerOutboundCall(params: {
+    apiKey: string;
+    agentId: string;
+    candidate: Pick<Candidate, "id" | "name" | "phone" | "role">;
+    smartPrompt?: string;
+  }): Promise<{ callId: string }> {
+    const { apiKey, agentId, candidate, smartPrompt } = params;
 
-    if (!candidate) throw new Error('Candidate not found');
-
-    const bolnaResponse = await fetch("https://api.bolna.ai/call", {
+    const response = await fetchWithTimeout(`${BOLNA_API_BASE}/call`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -25,56 +76,81 @@ export const BolnaService = {
           smartPrompt: smartPrompt || "Explore their general professional background.",
         },
       }),
+      timeoutMs: 15_000,
     });
 
-    if (!bolnaResponse.ok) {
-      const errorText = await bolnaResponse.text();
-      throw new Error(`Bolna API rejected the request: ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error("Bolna rejected outbound call", {
+        status: response.status,
+        candidateId: candidate.id,
+        errorText,
+      });
+      throw new Error("The voice provider rejected the call request.");
     }
 
-    const data = await bolnaResponse.json();
-    return { call_id: data.call_id };
+    const data = (await response.json()) as { call_id?: string };
+    if (!data.call_id) {
+      throw new Error("The voice provider did not return a call id.");
+    }
+    return { callId: data.call_id };
   },
 
   /**
-   * Processes the incoming Bolna webhook and applies changes safely in a transaction.
+   * Persist the result of a completed call. Idempotent: replays overwrite the
+   * same rows rather than duplicating transcript messages. Scores are taken from
+   * the provider's extraction verbatim — when they are absent, the call is marked
+   * completed with no screening result rather than inventing numbers.
    */
-  async processWebhook(payload: any) {
-    const callId = payload.call_id || payload.headers?.call_id || (payload.data && payload.data.call_id);
+  async processWebhook(
+    payload: BolnaWebhookPayload
+  ): Promise<{ status: "processed" | "ignored"; scored?: boolean; reason?: string }> {
+    const callId = payload.call_id ?? payload.headers?.call_id ?? payload.data?.call_id;
     if (!callId) {
-      throw new Error("No callId found in webhook payload. Ignoring.");
+      logger.warn("Webhook ignored: no call_id in payload");
+      return { status: "ignored", reason: "missing_call_id" };
     }
 
     const callLog = await prisma.callLog.findUnique({ where: { id: callId } });
     if (!callLog) {
-      throw new Error(`CallLog not found for callId: ${callId}`);
+      logger.warn("Webhook ignored: no matching call log", { callId });
+      return { status: "ignored", reason: "unknown_call_id" };
     }
 
-    const extraction = payload.data?.extraction || payload.extraction || payload.extracted_data || {};
-    
-    const technical = parseInt(extraction.technical_depth_score) || 75;
-    const communication = parseInt(extraction.communication_score) || 80;
-    const problemSolving = parseInt(extraction.problem_solving_score) || 78;
-    const cultureFit = parseInt(extraction.enthusiasm_score) || 82;
-    const overall = Math.round((technical + communication + problemSolving + cultureFit) / 4);
-    
-    const recommendation = overall >= 80 ? "Shortlist" : overall >= 65 ? "Hold" : "Reject";
+    const extraction =
+      payload.data?.extraction ?? payload.extraction ?? payload.extracted_data ?? {};
 
-    // Array wrapping transcript messages so we can nest them inside Prisma queries
-    const transcriptArray = payload.data?.transcript || payload.transcript || [];
-    const transcriptData = Array.isArray(transcriptArray) ? transcriptArray.map((t: any) => ({
-      candidateId: callLog.candidateId,
-      role: String(t.role).toLowerCase().includes('user') ? 'candidate' : 'agent',
-      text: t.text || t.content || "",
-      timestamp: t.timestamp || "00:00",
-    })) : [];
+    const technical = parseScore(extraction.technical_depth_score);
+    const communication = parseScore(extraction.communication_score);
+    const problemSolving = parseScore(extraction.problem_solving_score);
+    const cultureFit = parseScore(extraction.enthusiasm_score);
 
-    // ENTIRE WORKFLOW COMPLETED IN A SINGLE TRANSACTION
-    // This represents Production Best Practices to prevent partial writes.
-    await prisma.$transaction(async (tx: any) => {
+    const scores = [technical, communication, problemSolving, cultureFit];
+    const hasFullScores = scores.every((s): s is number => s !== null);
+    const overall = hasFullScores
+      ? Math.round((technical! + communication! + problemSolving! + cultureFit!) / 4)
+      : null;
+
+    const rawTranscript = payload.data?.transcript ?? payload.transcript;
+    const transcriptData = Array.isArray(rawTranscript)
+      ? rawTranscript.map((message: Record<string, unknown>) => ({
+          candidateId: callLog.candidateId,
+          role: String(message.role ?? "")
+            .toLowerCase()
+            .includes("user")
+            ? "candidate"
+            : "agent",
+          text: String(message.text ?? message.content ?? ""),
+          timestamp: String(message.timestamp ?? "00:00"),
+        }))
+      : [];
+
+    const duration = payload.data?.duration;
+
+    await prisma.$transaction(async (tx) => {
       await tx.candidate.update({
         where: { id: callLog.candidateId },
-        data: { callStatus: "completed", score: overall, completedAt: new Date() }
+        data: { callStatus: "completed", score: overall, completedAt: new Date() },
       });
 
       await tx.callLog.update({
@@ -82,50 +158,48 @@ export const BolnaService = {
         data: {
           status: "completed",
           score: overall,
-          duration: payload.data?.duration || "5m 2s"
-        }
-      });
-
-      await tx.screeningResult.upsert({
-        where: { candidateId: callLog.candidateId },
-        update: {
-          technicalScore: technical,
-          communicationScore: communication,
-          problemSolvingScore: problemSolving,
-          cultureFitScore: cultureFit,
-          overallScore: overall,
-          strengths: JSON.stringify(extraction.strengths || ["Good potential", "Strong communication basis"]),
-          concerns: JSON.stringify(extraction.concerns || ["Needs more specialized review"]),
-          recommendation,
-          summary: extraction.summary || "Call completed. Evaluated via AI.",
-          keySkills: JSON.stringify(extraction.tech_stack ? (Array.isArray(extraction.tech_stack) ? extraction.tech_stack : extraction.tech_stack.split(',')) : []),
-          availability: extraction.notice_period || "Unknown",
-          salaryExpectation: extraction.salary_expectation || "Disclosed in call",
+          ...(duration ? { duration } : {}),
         },
-        create: {
-          candidateId: callLog.candidateId,
-          technicalScore: technical,
-          communicationScore: communication,
-          problemSolvingScore: problemSolving,
-          cultureFitScore: cultureFit,
-          overallScore: overall,
-          strengths: JSON.stringify(extraction.strengths || ["Good potential", "Strong communication basis"]),
-          concerns: JSON.stringify(extraction.concerns || ["Needs more specialized review"]),
-          recommendation,
-          summary: extraction.summary || "Call completed. Evaluated via AI.",
-          keySkills: JSON.stringify(extraction.tech_stack ? (Array.isArray(extraction.tech_stack) ? extraction.tech_stack : extraction.tech_stack.split(',')) : []),
-          availability: extraction.notice_period || "Unknown",
-          salaryExpectation: extraction.salary_expectation || "Disclosed in call",
-        }
       });
 
-      if (transcriptData.length > 0) {
-        await tx.transcriptMessage.createMany({
-           data: transcriptData
+      if (hasFullScores) {
+        const screening = {
+          technicalScore: technical!,
+          communicationScore: communication!,
+          problemSolvingScore: problemSolving!,
+          cultureFitScore: cultureFit!,
+          overallScore: overall!,
+          strengths: JSON.stringify(toStringArray(extraction.strengths)),
+          concerns: JSON.stringify(toStringArray(extraction.concerns)),
+          recommendation: recommendationFor(overall!),
+          summary: typeof extraction.summary === "string" ? extraction.summary : "",
+          keySkills: JSON.stringify(toStringArray(extraction.tech_stack)),
+          availability:
+            typeof extraction.notice_period === "string" ? extraction.notice_period : "",
+          salaryExpectation:
+            typeof extraction.salary_expectation === "string" ? extraction.salary_expectation : "",
+        };
+
+        await tx.screeningResult.upsert({
+          where: { candidateId: callLog.candidateId },
+          update: screening,
+          create: { candidateId: callLog.candidateId, ...screening },
         });
+      }
+
+      // Idempotent transcript: replace rather than append on replay.
+      await tx.transcriptMessage.deleteMany({ where: { candidateId: callLog.candidateId } });
+      if (transcriptData.length > 0) {
+        await tx.transcriptMessage.createMany({ data: transcriptData });
       }
     });
 
-    return { success: true };
-  }
+    logger.info("Processed Bolna webhook", {
+      callId,
+      candidateId: callLog.candidateId,
+      scored: hasFullScores,
+    });
+
+    return { status: "processed", scored: hasFullScores };
+  },
 };

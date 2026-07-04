@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic2, Code, Copy, CheckCircle, ExternalLink, Zap, BookOpen } from "lucide-react";
+import { Mic2 } from "lucide-react";
 import Header from "@/components/Layout/Header";
 import { useState } from "react";
 // No mock data
@@ -108,152 +108,142 @@ const response = await fetch('https://api.bolna.ai/call', {
 const { call_id } = await response.json();
 console.log('Call initiated:', call_id);`;
 
- return (
-  <div className="flex flex-col min-h-screen bg-[#f6f8fb] text-gray-900">
-    <Header title="AI Agent" subtitle="Bolna Voice AI agent configuration and setup guide" />
+  return (
+    <div className="flex min-h-screen flex-col bg-[#f6f8fb] text-gray-900">
+      <Header title="AI Agent" subtitle="Bolna Voice AI agent configuration and setup guide" />
 
-    <div className="pt-16 p-6 space-y-6">
-
-      {/* OVERVIEW */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 flex gap-4 items-start">
-        <div className="w-14 h-14 rounded-xl bg-teal-600 flex items-center justify-center text-white flex-shrink-0">
-          <Mic2 className="w-6 h-6" />
-        </div>
-
-        <div className="flex-1">
-          <h2 className="text-lg font-semibold mb-1">
-            Aria — AI Recruitment Screener
-          </h2>
-
-          <p className="text-sm text-gray-500 mb-4">
-            Conduct structured AI screening calls and extract candidate insights.
-          </p>
-
-          <div className="flex gap-3 flex-wrap">
-            <a
-              href="https://platform.bolna.ai"
-              target="_blank"
-              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm"
-            >
-              Open Platform
-            </a>
-
-            <a
-              href="https://www.bolna.ai/docs/introduction"
-              target="_blank"
-              className="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm"
-            >
-              Docs
-            </a>
+      <div className="space-y-6 p-6 pt-16">
+        {/* OVERVIEW */}
+        <div className="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-6">
+          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white">
+            <Mic2 className="h-6 w-6" />
           </div>
-        </div>
 
-        <span className="text-xs bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full">
-          Active
-        </span>
-      </div>
+          <div className="flex-1">
+            <h2 className="mb-1 text-lg font-semibold">Aria — AI Recruitment Screener</h2>
 
-      {/* ARCHITECTURE */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-5">
-        <h3 className="text-sm font-semibold mb-4">System Flow</h3>
+            <p className="mb-4 text-sm text-gray-500">
+              Conduct structured AI screening calls and extract candidate insights.
+            </p>
 
-        <div className="flex gap-3 overflow-x-auto">
-          {[
-            "Web App",
-            "Bolna API",
-            "Voice AI",
-            "Candidate",
-            "Webhook",
-            "Backend",
-            "Dashboard",
-          ].map((step, i) => (
-            <div
-              key={i}
-              className="px-3 py-2 bg-gray-100 rounded-lg text-xs whitespace-nowrap"
-            >
-              {step}
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="https://platform.bolna.ai"
+                target="_blank"
+                className="rounded-lg bg-teal-600 px-4 py-2 text-sm text-white hover:bg-teal-700"
+              >
+                Open Platform
+              </a>
+
+              <a
+                href="https://www.bolna.ai/docs/introduction"
+                target="_blank"
+                className="rounded-lg bg-gray-100 px-4 py-2 text-sm hover:bg-gray-200"
+              >
+                Docs
+              </a>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* PROMPT */}
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-        <div className="flex justify-between items-center px-5 py-3 border-b">
-          <span className="text-sm font-semibold">Agent Prompt</span>
-
-          <button
-            onClick={() => handleCopy(BOLNA_AGENT_PROMPT, "prompt")}
-            className="text-xs text-gray-500"
-          >
-            {copied === "prompt" ? "Copied!" : "Copy"}
-          </button>
+          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs text-emerald-600">
+            Active
+          </span>
         </div>
 
-        <div className="p-5 bg-gray-50">
-          <pre className="text-xs text-gray-700 whitespace-pre-wrap">
-            {BOLNA_AGENT_PROMPT}
-          </pre>
+        {/* ARCHITECTURE */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-5">
+          <h3 className="mb-4 text-sm font-semibold">System Flow</h3>
+
+          <div className="flex gap-3 overflow-x-auto">
+            {[
+              "Web App",
+              "Bolna API",
+              "Voice AI",
+              "Candidate",
+              "Webhook",
+              "Backend",
+              "Dashboard",
+            ].map((step, i) => (
+              <div key={i} className="rounded-lg bg-gray-100 px-3 py-2 text-xs whitespace-nowrap">
+                {step}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* CODE */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          <div className="flex justify-between items-center px-5 py-3 border-b">
-            <span className="text-sm font-semibold">Create Agent</span>
+        {/* PROMPT */}
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+          <div className="flex items-center justify-between border-b px-5 py-3">
+            <span className="text-sm font-semibold">Agent Prompt</span>
 
             <button
-              onClick={() => handleCopy(agentPayload, "agent")}
+              onClick={() => handleCopy(BOLNA_AGENT_PROMPT, "prompt")}
               className="text-xs text-gray-500"
             >
-              {copied === "agent" ? "Copied!" : "Copy"}
+              {copied === "prompt" ? "Copied!" : "Copy"}
             </button>
           </div>
 
-          <div className="p-4 bg-gray-50 max-h-64 overflow-y-auto">
-            <pre className="text-xs text-gray-700">{agentPayload}</pre>
+          <div className="bg-gray-50 p-5">
+            <pre className="text-xs whitespace-pre-wrap text-gray-700">{BOLNA_AGENT_PROMPT}</pre>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          <div className="flex justify-between items-center px-5 py-3 border-b">
-            <span className="text-sm font-semibold">Make Call</span>
+        {/* CODE */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+            <div className="flex items-center justify-between border-b px-5 py-3">
+              <span className="text-sm font-semibold">Create Agent</span>
+
+              <button
+                onClick={() => handleCopy(agentPayload, "agent")}
+                className="text-xs text-gray-500"
+              >
+                {copied === "agent" ? "Copied!" : "Copy"}
+              </button>
+            </div>
+
+            <div className="max-h-64 overflow-y-auto bg-gray-50 p-4">
+              <pre className="text-xs text-gray-700">{agentPayload}</pre>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+            <div className="flex items-center justify-between border-b px-5 py-3">
+              <span className="text-sm font-semibold">Make Call</span>
+
+              <button
+                onClick={() => handleCopy(callPayload, "call")}
+                className="text-xs text-gray-500"
+              >
+                {copied === "call" ? "Copied!" : "Copy"}
+              </button>
+            </div>
+
+            <div className="max-h-64 overflow-y-auto bg-gray-50 p-4">
+              <pre className="text-xs text-gray-700">{callPayload}</pre>
+            </div>
+          </div>
+        </div>
+
+        {/* WEBHOOK */}
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+          <div className="flex items-center justify-between border-b px-5 py-3">
+            <span className="text-sm font-semibold">Webhook Handler</span>
 
             <button
-              onClick={() => handleCopy(callPayload, "call")}
+              onClick={() => handleCopy(webhookPayload, "webhook")}
               className="text-xs text-gray-500"
             >
-              {copied === "call" ? "Copied!" : "Copy"}
+              {copied === "webhook" ? "Copied!" : "Copy"}
             </button>
           </div>
 
-          <div className="p-4 bg-gray-50 max-h-64 overflow-y-auto">
-            <pre className="text-xs text-gray-700">{callPayload}</pre>
+          <div className="bg-gray-50 p-4">
+            <pre className="text-xs text-gray-700">{webhookPayload}</pre>
           </div>
         </div>
       </div>
-
-      {/* WEBHOOK */}
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-        <div className="flex justify-between items-center px-5 py-3 border-b">
-          <span className="text-sm font-semibold">Webhook Handler</span>
-
-          <button
-            onClick={() => handleCopy(webhookPayload, "webhook")}
-            className="text-xs text-gray-500"
-          >
-            {copied === "webhook" ? "Copied!" : "Copy"}
-          </button>
-        </div>
-
-        <div className="p-4 bg-gray-50">
-          <pre className="text-xs text-gray-700">{webhookPayload}</pre>
-        </div>
-      </div>
-
     </div>
-  </div>
-);
+  );
 }

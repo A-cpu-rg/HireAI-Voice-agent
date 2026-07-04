@@ -1,27 +1,32 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getSessionUser } from '@/lib/auth';
+import { Prisma } from "@prisma/client";
+import { json, parseQuery, requireUser, withRoute } from "@/lib/api";
+import { prisma } from "@/lib/prisma";
+import { listCallsSchema } from "@/lib/schemas";
 
-export async function GET(req: Request) {
-  try {
-    const user = await getSessionUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const GET = withRoute(async (req) => {
+  const user = await requireUser();
+  const query = parseQuery(req, listCallsSchema);
 
-    const { searchParams } = new URL(req.url);
-    const status = searchParams.get('status');
+  const where: Prisma.CallLogWhereInput = { userId: user.id };
+  if (query.status) where.status = query.status;
 
-    const whereClause: any = { userId: user.id };
-    if (status && status !== 'all') {
-      whereClause.status = status;
-    }
+  const [total, calls] = await Promise.all([
+    prisma.callLog.count({ where }),
+    prisma.callLog.findMany({
+      where,
+      orderBy: { startedAt: query.sortOrder },
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+    }),
+  ]);
 
-    const calls = await prisma.callLog.findMany({
-      where: whereClause,
-      orderBy: { startedAt: 'desc' }
-    });
-    return NextResponse.json({ data: calls });
-  } catch (error) {
-    console.error('Error fetching calls:', error);
-    return NextResponse.json({ error: 'Failed to fetch calls' }, { status: 500 });
-  }
-}
+  return json({
+    data: calls,
+    pagination: {
+      page: query.page,
+      pageSize: query.pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
+    },
+  });
+});

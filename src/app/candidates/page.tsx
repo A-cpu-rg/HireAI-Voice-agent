@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader, Plus, Search, Phone, ChevronDown, Filter } from "lucide-react";
+import { Loader, Plus, Search, Phone } from "lucide-react";
 import Header from "@/components/Layout/Header";
 import { CallStatusBadge, DecisionBadge, ScoreBadge, TagBadge } from "@/components/UI/Badge";
 import { CallStatus, Candidate, DecisionStatus, JobRole } from "@/types";
@@ -62,21 +62,6 @@ export default function Candidates() {
     fetchCandidates();
   }, [callStatusFilter, decisionFilter]);
 
-  const moveCandidateToProcessing = async (candidateId: string) => {
-    setTimeout(async () => {
-      try {
-        await fetch(`/api/candidates/${candidateId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ callStatus: "processing" }),
-        });
-        await fetchCandidates();
-      } catch {
-        // no-op
-      }
-    }, 3000);
-  };
-
   const initiateCall = async (candidateId: string) => {
     if (!isConfigured) {
       toast.error("Connect Bolna in Settings before starting a real AI call.");
@@ -84,9 +69,11 @@ export default function Candidates() {
       return;
     }
 
-    setCandidates((prev) => prev.map((candidate) => (
-      candidate.id === candidateId ? { ...candidate, callStatus: "calling" } : candidate
-    )));
+    setCandidates((prev) =>
+      prev.map((candidate) =>
+        candidate.id === candidateId ? { ...candidate, callStatus: "calling" } : candidate
+      )
+    );
     setActiveCallId(candidateId);
 
     const toastId = toast.loading("Calling candidate...");
@@ -104,18 +91,22 @@ export default function Candidates() {
       }
 
       toast.success("AI call started. Interview is in progress.", { id: toastId });
-      moveCandidateToProcessing(candidateId);
+      // Real status transitions are driven by the Bolna webhook, not a timer.
       fetchCandidates();
     } catch (err: any) {
       toast.error(err.message || "Call failed. Try again.", { id: toastId });
-      setCandidates((prev) => prev.map((candidate) => (
-        candidate.id === candidateId ? { ...candidate, callStatus: "failed" } : candidate
-      )));
+      setCandidates((prev) =>
+        prev.map((candidate) =>
+          candidate.id === candidateId ? { ...candidate, callStatus: "failed" } : candidate
+        )
+      );
       await fetch(`/api/candidates/${candidateId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ callStatus: "failed" }),
       });
+    } finally {
+      // Always clear so the Call buttons re-enable (previously only cleared on failure).
       setActiveCallId(null);
     }
   };
@@ -139,131 +130,119 @@ export default function Candidates() {
   const roles = Array.from(new Set(candidates.map((candidate) => candidate.role)));
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f6f8fb] text-gray-900">
-  
-      <Header
-        title="Candidates"
-        subtitle="Add candidates, run AI calls, and review results"
-      />
-  
-      <div className="pt-16 p-6 space-y-6">
-  
+    <div className="flex min-h-screen flex-col bg-[#f6f8fb] text-gray-900">
+      <Header title="Candidates" subtitle="Add candidates, run AI calls, and review results" />
+
+      <div className="space-y-6 p-6 pt-16">
         {/* HEADER */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 flex justify-between items-center">
+        <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white p-6">
           <div className="max-w-xl">
             <p className="text-sm text-gray-500">
               Add candidates → Start AI calls → Review results
             </p>
           </div>
-  
+
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg"
+            className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="h-4 w-4" />
             Add Candidate
           </button>
         </div>
-  
+
         {/* SEARCH + FILTER */}
-        <div className="flex items-center gap-3 flex-wrap">
-  
-          <div className="relative flex-1 min-w-[240px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[240px] flex-1">
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search candidates..."
-              className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-teal-500"
+              className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pr-4 pl-10 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:outline-none"
             />
           </div>
-  
+
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value as JobRole | "all")}
-            className="bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm"
+            className="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm"
           >
             <option value="all">All Roles</option>
             {roles.map((role) => (
               <option key={role}>{role}</option>
             ))}
           </select>
-  
+
           <select
             value={sortBy}
-            onChange={(e) =>
-              setSortBy(e.target.value as "score" | "date" | "name")
-            }
-            className="bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm"
+            onChange={(e) => setSortBy(e.target.value as "score" | "date" | "name")}
+            className="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm"
           >
             <option value="date">Latest</option>
             <option value="score">Score</option>
             <option value="name">Name</option>
           </select>
         </div>
-  
+
         {/* STATUS FILTERS */}
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2">
           {callStatusFilters.map((filter) => (
             <button
               key={filter.value}
               onClick={() => setCallStatusFilter(filter.value)}
               className={cn(
-                "text-xs px-3 py-1.5 rounded-full border transition",
+                "rounded-full border px-3 py-1.5 text-xs transition",
                 callStatusFilter === filter.value
-                  ? "bg-teal-600 text-white border-teal-600"
-                  : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100"
+                  ? "border-teal-600 bg-teal-600 text-white"
+                  : "border-gray-200 bg-white text-gray-500 hover:bg-gray-100"
               )}
             >
               {filter.label}
             </button>
           ))}
         </div>
-  
-        <div className="flex gap-2 flex-wrap">
+
+        <div className="flex flex-wrap gap-2">
           {decisionFilters.map((filter) => (
             <button
               key={filter.value}
               onClick={() => setDecisionFilter(filter.value)}
               className={cn(
-                "text-xs px-3 py-1.5 rounded-full border transition",
+                "rounded-full border px-3 py-1.5 text-xs transition",
                 decisionFilter === filter.value
-                  ? "bg-emerald-600 text-white border-emerald-600"
-                  : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100"
+                  ? "border-emerald-600 bg-emerald-600 text-white"
+                  : "border-gray-200 bg-white text-gray-500 hover:bg-gray-100"
               )}
             >
               {filter.label}
             </button>
           ))}
-  
-          <span className="ml-auto text-xs text-gray-400">
-            {filtered.length} results
-          </span>
+
+          <span className="ml-auto text-xs text-gray-400">{filtered.length} results</span>
         </div>
-  
+
         {/* TABLE */}
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-  
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
           <table className="w-full text-sm">
-  
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-left px-5 py-3 text-xs text-gray-500">Candidate</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-500">Role</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-500">Job</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-500">Status</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-500">Decision</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-500">Score</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-500">Skills</th>
-                <th className="text-left px-4 py-3 text-xs text-gray-500">Action</th>
+                <th className="px-5 py-3 text-left text-xs text-gray-500">Candidate</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500">Role</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500">Job</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500">Status</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500">Decision</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500">Score</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500">Skills</th>
+                <th className="px-4 py-3 text-left text-xs text-gray-500">Action</th>
               </tr>
             </thead>
-  
+
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={8} className="py-16 text-center">
-                    <Loader className="animate-spin mx-auto text-gray-400" />
+                    <Loader className="mx-auto animate-spin text-gray-400" />
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
@@ -276,15 +255,13 @@ export default function Candidates() {
                 filtered.map((candidate) => (
                   <tr
                     key={candidate.id}
-                    className="border-t hover:bg-gray-50 cursor-pointer"
-                    onClick={() =>
-                      router.push(`/candidates/${candidate.id}`)
-                    }
+                    className="cursor-pointer border-t hover:bg-gray-50"
+                    onClick={() => router.push(`/candidates/${candidate.id}`)}
                   >
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <div
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold"
+                          className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-white"
                           style={{ background: candidate.avatarColor }}
                         >
                           {candidate.name
@@ -294,64 +271,54 @@ export default function Candidates() {
                         </div>
                         <div>
                           <p className="font-medium">{candidate.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {candidate.email}
-                          </p>
+                          <p className="text-xs text-gray-500">{candidate.email}</p>
                         </div>
                       </div>
                     </td>
-  
+
                     <td className="px-4 py-3">{candidate.role}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
+                    <td className="px-4 py-3 text-xs text-gray-500">
                       {candidate.job?.title || "Direct"}
                     </td>
-  
+
                     <td className="px-4 py-3">
                       <CallStatusBadge status={candidate.callStatus} />
                     </td>
-  
+
                     <td className="px-4 py-3">
                       <DecisionBadge status={candidate.decisionStatus} />
                     </td>
-  
+
                     <td className="px-4 py-3">
                       {candidate.score ? (
                         <ScoreBadge score={candidate.score} />
                       ) : (
-                        <span className="text-gray-400 text-xs">—</span>
+                        <span className="text-xs text-gray-400">—</span>
                       )}
                     </td>
-  
+
                     <td className="px-4 py-3">
-                      <div className="flex gap-1 flex-wrap max-w-[140px]">
-                        {(candidate.tags || [])
-                          .slice(0, 2)
-                          .map((tag) => (
-                            <TagBadge key={tag} tag={tag} />
-                          ))}
+                      <div className="flex max-w-[140px] flex-wrap gap-1">
+                        {(candidate.tags || []).slice(0, 2).map((tag) => (
+                          <TagBadge key={tag} tag={tag} />
+                        ))}
                       </div>
                     </td>
-  
-                    <td
-                      className="px-4 py-3"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {(candidate.callStatus === "pending" ||
-                        candidate.callStatus === "failed") ? (
+
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      {candidate.callStatus === "pending" || candidate.callStatus === "failed" ? (
                         <button
                           onClick={() => initiateCall(candidate.id)}
                           disabled={Boolean(activeCallId)}
-                          className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-lg text-sm"
+                          className="rounded-lg bg-teal-600 px-3 py-2 text-sm text-white hover:bg-teal-700"
                         >
-                          <Phone className="w-4 h-4 inline mr-1" />
+                          <Phone className="mr-1 inline h-4 w-4" />
                           Call
                         </button>
                       ) : (
                         <button
-                          onClick={() =>
-                            router.push(`/candidates/${candidate.id}`)
-                          }
-                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm"
+                          onClick={() => router.push(`/candidates/${candidate.id}`)}
+                          className="rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200"
                         >
                           View
                         </button>
@@ -364,7 +331,7 @@ export default function Candidates() {
           </table>
         </div>
       </div>
-  
+
       {showAddModal && (
         <AddCandidateModal
           onClose={() => {

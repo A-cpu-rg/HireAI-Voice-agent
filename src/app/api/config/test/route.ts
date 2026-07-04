@@ -1,31 +1,26 @@
-import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth";
+import { assertSameOrigin, json, parseBody, requireUser, withRoute } from "@/lib/api";
+import { fetchWithTimeout } from "@/lib/http";
+import { logger } from "@/lib/logger";
+import { testConfigSchema } from "@/lib/schemas";
 
-export async function POST(req: Request) {
-  try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export const POST = withRoute(async (req) => {
+  assertSameOrigin(req);
+  await requireUser();
+  const { apiKey, agentId } = await parseBody(req, testConfigSchema);
 
-    const { apiKey, agentId } = await req.json();
+  // agentId is path-encoded so it cannot break out of the fixed host.
+  const res = await fetchWithTimeout(
+    `https://api.bolna.ai/v2/agent/${encodeURIComponent(agentId)}`,
+    { headers: { Authorization: `Bearer ${apiKey}` }, timeoutMs: 10_000 }
+  );
 
-    if (!apiKey || !agentId) {
-      return NextResponse.json({ error: "API key and Agent ID are required." }, { status: 400 });
-    }
-
-    const res = await fetch(`https://api.bolna.ai/v2/agent/${agentId}`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      return NextResponse.json({ ok: false, error: errorText || "Connection failed" }, { status: 400 });
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error("Config test error:", error);
-    return NextResponse.json({ error: "Failed to test Bolna connection" }, { status: 500 });
+  if (!res.ok) {
+    logger.warn("Bolna credential test failed", { status: res.status });
+    return json(
+      { ok: false, error: "Could not verify these credentials with Bolna." },
+      { status: 400 }
+    );
   }
-}
+
+  return json({ ok: true });
+});

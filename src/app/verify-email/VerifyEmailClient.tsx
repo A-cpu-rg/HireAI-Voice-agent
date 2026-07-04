@@ -47,24 +47,28 @@ export default function VerifyEmailClient() {
   }, [router, token]);
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur p-8 text-center shadow-2xl">
+    <div className="flex min-h-[70vh] items-center justify-center">
+      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center shadow-2xl backdrop-blur">
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
-          {status === "loading" && <Loader className="w-6 h-6 animate-spin text-indigo-300" />}
-          {status === "success" && <CheckCircle2 className="w-6 h-6 text-emerald-400" />}
-          {status === "error" && <MailWarning className="w-6 h-6 text-amber-400" />}
+          {status === "loading" && <Loader className="h-6 w-6 animate-spin text-indigo-300" />}
+          {status === "success" && <CheckCircle2 className="h-6 w-6 text-emerald-400" />}
+          {status === "error" && <MailWarning className="h-6 w-6 text-amber-400" />}
         </div>
-        <h1 className="text-2xl font-semibold text-white mb-2">
-          {status === "success" ? "Email verified" : status === "error" ? "Verification failed" : "Checking your link"}
+        <h1 className="mb-2 text-2xl font-semibold text-white">
+          {status === "success"
+            ? "Email verified"
+            : status === "error"
+              ? "Verification failed"
+              : "Checking your link"}
         </h1>
-        <p className="text-sm text-white/65 leading-relaxed mb-6">{message}</p>
+        <p className="mb-6 text-sm leading-relaxed text-white/65">{message}</p>
 
         {status === "error" && (
           <button
             onClick={() => router.replace("/login")}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-3 transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
           >
-            <XCircle className="w-4 h-4" />
+            <XCircle className="h-4 w-4" />
             Back to login
           </button>
         )}

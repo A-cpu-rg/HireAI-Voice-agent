@@ -1,54 +1,63 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getSessionUser } from '@/lib/auth';
+import { Prisma } from "@prisma/client";
+import { assertSameOrigin, json, parseBody, parseQuery, requireUser, withRoute } from "@/lib/api";
+import { prisma } from "@/lib/prisma";
+import { serializeJob } from "@/lib/serializers";
+import { createJobSchema, listJobsSchema } from "@/lib/schemas";
 
-export async function GET() {
-  try {
-    const user = await getSessionUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const GET = withRoute(async (req) => {
+  const user = await requireUser();
+  const query = parseQuery(req, listJobsSchema);
 
-    const jobs = await (prisma.job as any).findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' }
-    });
-    const parsed = jobs.map((j: any) => ({
-      ...j,
-      skills: j.skills ? JSON.parse(j.skills) : [],
-    }));
-    return NextResponse.json(parsed);
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to fetch jobs' }, { status: 500 });
+  const where: Prisma.JobWhereInput = { userId: user.id };
+  if (query.status) where.status = query.status;
+  if (query.search) {
+    where.OR = [
+      { title: { contains: query.search, mode: "insensitive" } },
+      { department: { contains: query.search, mode: "insensitive" } },
+    ];
   }
-}
 
-export async function POST(req: Request) {
-  try {
-    const user = await getSessionUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const [total, jobs] = await Promise.all([
+    prisma.job.count({ where }),
+    prisma.job.findMany({
+      where,
+      orderBy: { createdAt: query.sortOrder },
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+    }),
+  ]);
 
-    const data = await req.json();
+  return json({
+    data: jobs.map(serializeJob),
+    pagination: {
+      page: query.page,
+      pageSize: query.pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
+    },
+  });
+});
 
-    const job = await (prisma.job as any).create({
-      data: {
-        title: data.title,
-        department: data.department,
-        location: data.location,
-        type: data.type,
-        openings: Number(data.openings || 1),
-        description: data.description,
-        skills: JSON.stringify(data.skills || []),
-        salaryRange: data.salaryRange,
-        userId: user.id,
-      },
-    });
+export const POST = withRoute(async (req) => {
+  assertSameOrigin(req);
+  const user = await requireUser();
+  const data = await parseBody(req, createJobSchema);
 
-    return NextResponse.json({
-      ...job,
-      skills: data.skills || [],
-    });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to create job' }, { status: 500 });
-  }
-}
+  const job = await prisma.job.create({
+    data: {
+      title: data.title,
+      department: data.department,
+      location: data.location,
+      type: data.type,
+      openings: data.openings,
+      status: data.status,
+      description: data.description,
+      skills: JSON.stringify(data.skills),
+      salaryRange: data.salaryRange,
+      smartPrompt: data.smartPrompt ?? null,
+      userId: user.id,
+    },
+  });
+
+  return json({ data: serializeJob(job) }, { status: 201 });
+});

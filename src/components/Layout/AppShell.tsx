@@ -58,9 +58,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   if (checkingAuth) {
     return (
-      <main className="min-h-screen bg-[#0b0b14] text-white flex items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center bg-[#0b0b14] text-white">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-white/15 border-t-indigo-400 rounded-full animate-spin mx-auto mb-4" />
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-indigo-400" />
           <p className="text-sm text-white/45">Checking session...</p>
         </div>
       </main>

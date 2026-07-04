@@ -1,78 +1,42 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getSessionUser } from '@/lib/auth';
+import { ApiError, assertSameOrigin, json, parseBody, requireUser, withRoute } from "@/lib/api";
+import { prisma } from "@/lib/prisma";
+import { serializeCandidate } from "@/lib/serializers";
+import { updateCandidateSchema } from "@/lib/schemas";
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const user = await getSessionUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const GET = withRoute(async (req, { params }) => {
+  const user = await requireUser();
+  const { id } = await params;
 
-    const { id } = await params;
-    
-    // Use findFirst with both id + userId for multi-tenant scoping
-    const candidate = await prisma.candidate.findFirst({
-      where: { id, userId: user.id },
-      include: {
-        screeningResult: true,
-        transcript: true,
-        job: true,
-      }
-    });
+  const candidate = await prisma.candidate.findFirst({
+    where: { id, userId: user.id },
+    include: {
+      screeningResult: true,
+      job: true,
+      transcript: { orderBy: { id: "asc" } },
+    },
+  });
+  if (!candidate) throw ApiError.notFound("Candidate not found.");
 
-    if (!candidate) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
+  return json({ candidate: serializeCandidate(candidate) });
+});
 
-    // Parse JSON fields before sending to client
-    const parsed: any = {
-      ...candidate,
-      tags: candidate.tags ? JSON.parse(candidate.tags) : [],
-      job: candidate.job ? { ...candidate.job, skills: candidate.job.skills ? JSON.parse(candidate.job.skills) : [] } : null,
-      screeningResult: candidate.screeningResult ? {
-        ...candidate.screeningResult,
-        strengths: JSON.parse(candidate.screeningResult.strengths),
-        concerns: JSON.parse(candidate.screeningResult.concerns),
-        keySkills: JSON.parse(candidate.screeningResult.keySkills),
-      } : undefined
-    };
+export const PATCH = withRoute(async (req, { params }) => {
+  assertSameOrigin(req);
+  const user = await requireUser();
+  const { id } = await params;
+  const updates = await parseBody(req, updateCandidateSchema);
 
-    return NextResponse.json({ candidate: parsed });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to fetch candidate detail' }, { status: 500 });
-  }
-}
+  // Scope the update itself by userId so ownership is enforced atomically.
+  const result = await prisma.candidate.updateMany({
+    where: { id, userId: user.id },
+    data: updates,
+  });
+  if (result.count === 0) throw ApiError.notFound("Candidate not found.");
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const user = await getSessionUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const candidate = await prisma.candidate.findFirst({
+    where: { id, userId: user.id },
+    include: { screeningResult: true, job: true },
+  });
 
-    const { id } = await params;
-    const body = await req.json();
-
-    const updateData: any = {};
-    if (body.callStatus) updateData.callStatus = body.callStatus;
-    if (body.decisionStatus) updateData.decisionStatus = body.decisionStatus;
-    if (body.score !== undefined) updateData.score = body.score;
-
-    // First ensure the candidate belongs to the user
-    const existing = await prisma.candidate.findFirst({
-      where: { id, userId: user.id }
-    });
-
-    if (!existing) {
-       return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
-
-    const candidate = await prisma.candidate.update({
-      where: { id },
-      data: updateData,
-    });
-
-    return NextResponse.json({ data: candidate });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to update candidate' }, { status: 500 });
-  }
-}
+  return json({ data: candidate ? serializeCandidate(candidate) : null });
+});

@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "crypto";
+import { env } from "@/env";
 
 const VERIFICATION_TTL_MS = 1000 * 60 * 60 * 24;
 
@@ -15,7 +16,5 @@ export function hashVerificationToken(token: string) {
 }
 
 export function buildVerificationUrl(token: string) {
-  const appUrl = process.env.APP_URL || "http://localhost:3000";
-  return `${appUrl}/verify-email?token=${encodeURIComponent(token)}`;
+  return `${env.APP_URL}/verify-email?token=${encodeURIComponent(token)}`;
 }
-

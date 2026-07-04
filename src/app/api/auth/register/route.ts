@@ -1,75 +1,43 @@
-import { NextResponse } from "next/server";
+import { ApiError, assertSameOrigin, getClientIp, json, parseBody, withRoute } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
-import { buildVerificationUrl, generateVerificationToken } from "@/lib/email-verification";
-import { sendVerificationEmail } from "@/lib/mailer";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { signupSchema } from "@/lib/schemas";
+import { issueAndSendVerification } from "@/services/auth.service";
 
-export async function POST(req: Request) {
-  try {
-    const { name, email, password } = await req.json();
+export const POST = withRoute(async (req) => {
+  assertSameOrigin(req);
+  enforceRateLimit(`register:${getClientIp(req)}`, RATE_LIMITS.auth);
 
-    if (!name || !email || !password) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
+  const { name, email, password } = await parseBody(req, signupSchema);
 
-    if (password.length < 6) {
-      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
-    }
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser?.emailVerifiedAt) {
+    throw ApiError.conflict("An account with this email already exists.");
+  }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
-    const trimmedName = String(name).trim();
+  const passwordHash = hashPassword(password);
+  const fallbackName = name?.trim() || email.split("@")[0];
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+  const user = existingUser
+    ? await prisma.user.update({
+        where: { id: existingUser.id },
+        data: { name: name?.trim() || existingUser.name || fallbackName, passwordHash },
+      })
+    : await prisma.user.create({
+        data: { name: fallbackName, email, passwordHash },
+      });
 
-    if (existingUser?.emailVerifiedAt) {
-      return NextResponse.json({ error: "User with this email already exists" }, { status: 409 });
-    }
+  const delivery = await issueAndSendVerification(user);
 
-    const hashedPassword = hashPassword(password);
-    const { token, tokenHash, expiresAt } = generateVerificationToken();
-
-    const user = existingUser
-      ? await prisma.user.update({
-          where: { id: existingUser.id },
-          data: {
-            name: trimmedName || existingUser.name || normalizedEmail.split("@")[0],
-            passwordHash: hashedPassword,
-            verificationTokenHash: tokenHash,
-            verificationTokenExpiresAt: expiresAt,
-          },
-        })
-      : await prisma.user.create({
-          data: {
-            name: trimmedName || normalizedEmail.split("@")[0],
-            email: normalizedEmail,
-            passwordHash: hashedPassword,
-            verificationTokenHash: tokenHash,
-            verificationTokenExpiresAt: expiresAt,
-          },
-        });
-
-    const verificationUrl = buildVerificationUrl(token);
-    const delivery = await sendVerificationEmail({
-      to: user.email,
-      name: user.name,
-      verificationUrl,
-    });
-
-    return NextResponse.json({
+  return json(
+    {
       success: true,
       requiresVerification: true,
       message: "Account created. Verify your email before logging in.",
       previewUrl: "previewUrl" in delivery ? delivery.previewUrl : undefined,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
-    });
-  } catch (error: any) {
-    console.error("Registration Error:", error);
-    return NextResponse.json({ error: error.message || "An error occurred during registration" }, { status: 500 });
-  }
-}
+      user: { id: user.id, email: user.email, name: user.name },
+    },
+    { status: 201 }
+  );
+});

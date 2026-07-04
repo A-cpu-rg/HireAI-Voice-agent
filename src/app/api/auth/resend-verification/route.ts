@@ -1,53 +1,28 @@
-import { NextResponse } from "next/server";
+import { assertSameOrigin, getClientIp, json, parseBody, withRoute } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
-import { buildVerificationUrl, generateVerificationToken } from "@/lib/email-verification";
-import { sendVerificationEmail } from "@/lib/mailer";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { resendVerificationSchema } from "@/lib/schemas";
+import { issueAndSendVerification } from "@/services/auth.service";
 
-export async function POST(req: Request) {
-  try {
-    const { email } = await req.json();
-    const normalizedEmail = String(email || "").trim().toLowerCase();
+export const POST = withRoute(async (req) => {
+  assertSameOrigin(req);
+  enforceRateLimit(`resend:${getClientIp(req)}`, RATE_LIMITS.email);
 
-    if (!normalizedEmail) {
-      return NextResponse.json({ error: "Email is required." }, { status: 400 });
-    }
+  const { email } = await parseBody(req, resendVerificationSchema);
 
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+  const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) {
-      return NextResponse.json({ error: "No account found for this email." }, { status: 404 });
-    }
-
-    if (user.emailVerifiedAt) {
-      return NextResponse.json({ error: "This email is already verified." }, { status: 409 });
-    }
-
-    const { token, tokenHash, expiresAt } = generateVerificationToken();
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        verificationTokenHash: tokenHash,
-        verificationTokenExpiresAt: expiresAt,
-      },
-    });
-
-    const verificationUrl = buildVerificationUrl(token);
-    const delivery = await sendVerificationEmail({
-      to: user.email,
-      name: user.name,
-      verificationUrl,
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Verification email sent.",
-      previewUrl: "previewUrl" in delivery ? delivery.previewUrl : undefined,
-    });
-  } catch (error) {
-    console.error("Resend verification error:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to resend verification email." }, { status: 500 });
+  // Only send when the account exists and is unverified, but always return the
+  // same response so the endpoint does not disclose which emails are registered.
+  let previewUrl: string | undefined;
+  if (user && !user.emailVerifiedAt) {
+    const delivery = await issueAndSendVerification(user);
+    if ("previewUrl" in delivery) previewUrl = delivery.previewUrl;
   }
-}
+
+  return json({
+    success: true,
+    message: "If an account needs verification, a new link has been sent.",
+    previewUrl,
+  });
+});

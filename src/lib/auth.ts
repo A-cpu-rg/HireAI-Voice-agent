@@ -1,81 +1,34 @@
 import { cookies } from "next/headers";
-import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { prisma } from "./prisma";
+import { isProduction } from "@/env";
+import { logger } from "./logger";
+import { decodeSession, encodeSession, SESSION_TTL_SECONDS } from "./session";
 
-const SESSION_COOKIE = "hireai_session";
-const SESSION_SECRET = process.env.AUTH_SECRET || "dev-hireai-session-secret";
+export const SESSION_COOKIE = "hireai_session";
 
-function hashValue(value: string) {
-  return createHmac("sha256", SESSION_SECRET).update(value).digest("hex");
-}
-
-function encodeSession(userId: string) {
-  const nonce = randomBytes(8).toString("hex");
-  const payload = `${userId}.${nonce}`;
-  const signature = hashValue(payload);
-  return `${payload}.${signature}`;
-}
-
-function decodeSession(token: string) {
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-
-  const [userId, nonce, signature] = parts;
-  const payload = `${userId}.${nonce}`;
-  const expectedSignature = hashValue(payload);
-
-  try {
-    const valid = timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
-    return valid ? userId : null;
-  } catch {
-    return null;
-  }
-}
-
-export function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, 64).toString("hex");
-  return `${salt}:${hash}`;
-}
-
-export function verifyPassword(password: string, passwordHash: string) {
-  const [salt, storedHash] = passwordHash.split(":");
-  if (!salt || !storedHash) return false;
-
-  const derivedHash = scryptSync(password, salt, 64).toString("hex");
-
-  try {
-    return timingSafeEqual(Buffer.from(storedHash), Buffer.from(derivedHash));
-  } catch {
-    return false;
-  }
-}
+// Re-export the pure crypto helpers so existing imports keep working.
+export {
+  encodeSession,
+  decodeSession,
+  hashPassword,
+  verifyPassword,
+  SESSION_TTL_SECONDS,
+} from "./session";
 
 export async function getSessionUser() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
-
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
 
   const userId = decodeSession(token);
-  if (!userId) {
-    return null;
-  }
+  if (!userId) return null;
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user?.emailVerifiedAt) {
-      return null;
-    }
-
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.emailVerifiedAt) return null;
     return user;
   } catch (error) {
-    console.error("Auth error:", error);
+    logger.error("Failed to resolve session user", { error });
     return null;
   }
 }
@@ -84,10 +37,10 @@ export async function loginUser(userId: string) {
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, encodeSession(userId), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isProduction,
     path: "/",
     sameSite: "lax",
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: SESSION_TTL_SECONDS,
   });
 }
 

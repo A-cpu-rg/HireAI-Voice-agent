@@ -1,6 +1,19 @@
 "use client";
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+} from "recharts";
 import Header from "@/components/Layout/Header";
 import { TrendingUp, Users, Clock, Zap, Loader } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
@@ -26,10 +39,12 @@ function parseDurationToMinutes(duration: string | null | undefined) {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#1a1a2e] border border-white/10 rounded-xl p-3 text-xs shadow-xl">
-        <p className="text-white/60 mb-1">{label}</p>
+      <div className="rounded-xl border border-white/10 bg-[#1a1a2e] p-3 text-xs shadow-xl">
+        <p className="mb-1 text-white/60">{label}</p>
         {payload.map((p: any, i: number) => (
-          <p key={i} style={{ color: p.color }} className="font-semibold">{p.name}: {p.value}</p>
+          <p key={i} style={{ color: p.color }} className="font-semibold">
+            {p.name}: {p.value}
+          </p>
         ))}
       </div>
     );
@@ -44,29 +59,40 @@ export default function Analytics() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/candidates').then(res => res.json()),
-      fetch('/api/calls').then(res => res.json()),
-    ]).then(([candData, callData]) => {
-      setCandidates(candData.data || []);
-      setCallLogs(callData.data || []);
-      setLoading(false);
-    }).catch(err => {
-      console.error(err);
-      setLoading(false);
-    });
+      fetch("/api/candidates").then((res) => res.json()),
+      fetch("/api/calls").then((res) => res.json()),
+    ])
+      .then(([candData, callData]) => {
+        setCandidates(candData.data || []);
+        setCallLogs(callData.data || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   }, []);
 
   const analytics = useMemo(() => {
     const completedCalls = callLogs.filter((call) => call.status === "completed");
-    const completedCandidates = candidates.filter((candidate) => candidate.callStatus === "completed");
-    const shortlistedCandidates = candidates.filter((candidate) => candidate.decisionStatus === "shortlisted");
-    const rejectedCandidates = candidates.filter((candidate) => candidate.decisionStatus === "rejected");
+    const completedCandidates = candidates.filter(
+      (candidate) => candidate.callStatus === "completed"
+    );
+    const shortlistedCandidates = candidates.filter(
+      (candidate) => candidate.decisionStatus === "shortlisted"
+    );
+    const rejectedCandidates = candidates.filter(
+      (candidate) => candidate.decisionStatus === "rejected"
+    );
     const pendingCandidates = candidates.filter((candidate) => candidate.callStatus === "pending");
-    const processingCandidates = candidates.filter((candidate) => candidate.callStatus === "processing");
+    const processingCandidates = candidates.filter(
+      (candidate) => candidate.callStatus === "processing"
+    );
     const callingCandidates = candidates.filter((candidate) => candidate.callStatus === "calling");
 
     const averageDurationMinutes = completedCalls.length
-      ? completedCalls.reduce((sum, call) => sum + parseDurationToMinutes(call.duration), 0) / completedCalls.length
+      ? completedCalls.reduce((sum, call) => sum + parseDurationToMinutes(call.duration), 0) /
+        completedCalls.length
       : 0;
 
     const avgDurationLabel = averageDurationMinutes
@@ -79,7 +105,8 @@ export default function Analytics() {
 
     const averageScore = completedCandidates.length
       ? Math.round(
-          completedCandidates.reduce((sum, candidate) => sum + (candidate.score || 0), 0) / completedCandidates.length
+          completedCandidates.reduce((sum, candidate) => sum + (candidate.score || 0), 0) /
+            completedCandidates.length
         )
       : 0;
 
@@ -97,14 +124,38 @@ export default function Analytics() {
     ].filter((item) => item.value > 0);
 
     const scoreDistribution = [
-      { range: "0-30", count: candidates.filter((c) => typeof c.score === "number" && c.score <= 30).length },
-      { range: "31-50", count: candidates.filter((c) => typeof c.score === "number" && c.score > 30 && c.score <= 50).length },
-      { range: "51-70", count: candidates.filter((c) => typeof c.score === "number" && c.score > 50 && c.score <= 70).length },
-      { range: "71-85", count: candidates.filter((c) => typeof c.score === "number" && c.score > 70 && c.score <= 85).length },
-      { range: "86-100", count: candidates.filter((c) => typeof c.score === "number" && c.score > 85).length },
+      {
+        range: "0-30",
+        count: candidates.filter((c) => typeof c.score === "number" && c.score <= 30).length,
+      },
+      {
+        range: "31-50",
+        count: candidates.filter(
+          (c) => typeof c.score === "number" && c.score > 30 && c.score <= 50
+        ).length,
+      },
+      {
+        range: "51-70",
+        count: candidates.filter(
+          (c) => typeof c.score === "number" && c.score > 50 && c.score <= 70
+        ).length,
+      },
+      {
+        range: "71-85",
+        count: candidates.filter(
+          (c) => typeof c.score === "number" && c.score > 70 && c.score <= 85
+        ).length,
+      },
+      {
+        range: "86-100",
+        count: candidates.filter((c) => typeof c.score === "number" && c.score > 85).length,
+      },
     ];
 
-    const roleMap = new Map<string, { name: string; applicants: number; screened: number; shortlisted: number }>();
+    const roleMap = new Map<
+      string,
+      { name: string; applicants: number; screened: number; shortlisted: number }
+    >();
     for (const candidate of candidates) {
       const key = candidate.job?.title || candidate.role || "Unassigned";
       const current = roleMap.get(key) || {
@@ -165,16 +216,47 @@ export default function Analytics() {
       statusPie,
       scoreDistribution,
       roleDistribution,
-      monthlyTrend: monthBuckets.map(({ month, calls, screened, shortlisted }) => ({ month, calls, screened, shortlisted })),
+      monthlyTrend: monthBuckets.map(({ month, calls, screened, shortlisted }) => ({
+        month,
+        calls,
+        screened,
+        shortlisted,
+      })),
       kpiMetrics: [
-        { label: "Time to Screen", value: avgDurationLabel, sub: `${completedCalls.length} completed call${completedCalls.length === 1 ? "" : "s"}`, icon: Clock, color: "indigo" },
-        { label: "Human Hours Saved", value: `${humanHoursSaved} hrs`, sub: "based on completed screenings", icon: Zap, color: "violet" },
-        { label: "Avg. AI Score", value: averageScore ? `${averageScore}%` : "0%", sub: "from completed interviews", icon: TrendingUp, color: "emerald" },
-        { label: "Cost per Screening", value: `₹${AI_SCREENING_COST}`, sub: `vs ₹${MANUAL_SCREENING_COST} manual review`, icon: Users, color: "amber" },
+        {
+          label: "Time to Screen",
+          value: avgDurationLabel,
+          sub: `${completedCalls.length} completed call${completedCalls.length === 1 ? "" : "s"}`,
+          icon: Clock,
+          color: "indigo",
+        },
+        {
+          label: "Human Hours Saved",
+          value: `${humanHoursSaved} hrs`,
+          sub: "based on completed screenings",
+          icon: Zap,
+          color: "violet",
+        },
+        {
+          label: "Avg. AI Score",
+          value: averageScore ? `${averageScore}%` : "0%",
+          sub: "from completed interviews",
+          icon: TrendingUp,
+          color: "emerald",
+        },
+        {
+          label: "Cost per Screening",
+          value: `₹${AI_SCREENING_COST}`,
+          sub: `vs ₹${MANUAL_SCREENING_COST} manual review`,
+          icon: Users,
+          color: "amber",
+        },
       ],
       impactSummary: [
         {
-          value: averageDurationMinutes ? `${Math.max(1, Math.round(MANUAL_REVIEW_MINUTES / averageDurationMinutes))}×` : "0×",
+          value: averageDurationMinutes
+            ? `${Math.max(1, Math.round(MANUAL_REVIEW_MINUTES / averageDurationMinutes))}×`
+            : "0×",
           title: "Faster Screening",
           description: averageDurationMinutes
             ? `${avgDurationLabel} AI interview vs ${Math.round(MANUAL_REVIEW_MINUTES / 60)} hrs manual review`
@@ -205,40 +287,40 @@ export default function Analytics() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f6f8fb] text-gray-900">
-  
+    <div className="flex min-h-screen flex-col bg-[#f6f8fb] text-gray-900">
       <Header title="Analytics" subtitle="AI screening performance metrics and insights" />
-  
-      <div className="pt-16 p-6 space-y-6">
-  
+
+      <div className="space-y-6 p-6 pt-16">
         {loading ? (
-          <div className="text-center py-20 text-gray-400">
-            <Loader className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <div className="py-20 text-center text-gray-400">
+            <Loader className="mx-auto mb-4 h-8 w-8 animate-spin" />
             <p>Loading Analytics...</p>
           </div>
         ) : (
           <>
             {/* KPI */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {analytics.kpiMetrics.map((m) => (
-                <div key={m.label} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3 bg-gray-100">
-                    <m.icon className="w-4 h-4 text-gray-600" />
+                <div
+                  key={m.label}
+                  className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
+                    <m.icon className="h-4 w-4 text-gray-600" />
                   </div>
                   <p className="text-xl font-semibold">{m.value}</p>
                   <p className="text-xs text-gray-500">{m.label}</p>
-                  <p className="text-[11px] text-gray-400 mt-1">{m.sub}</p>
+                  <p className="mt-1 text-[11px] text-gray-400">{m.sub}</p>
                 </div>
               ))}
             </div>
-  
+
             {/* Charts Row 1 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-  
-              <div className="md:col-span-2 bg-white border border-gray-200 rounded-xl p-5">
-                <h2 className="text-sm font-semibold mb-1">Monthly Screening Trend</h2>
-                <p className="text-xs text-gray-500 mb-4">4-month overvieW</p>
-  
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="rounded-xl border border-gray-200 bg-white p-5 md:col-span-2">
+                <h2 className="mb-1 text-sm font-semibold">Monthly Screening Trend</h2>
+                <p className="mb-4 text-xs text-gray-500">4-month overvieW</p>
+
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={analytics.monthlyTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
@@ -251,15 +333,20 @@ export default function Analytics() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-  
+
               {/* Pie */}
-              <div className="bg-white border border-gray-200 rounded-xl p-5">
-                <h2 className="text-sm font-semibold mb-1">Candidate Status</h2>
-                <p className="text-xs text-gray-500 mb-4">Distribution</p>
-  
+              <div className="rounded-xl border border-gray-200 bg-white p-5">
+                <h2 className="mb-1 text-sm font-semibold">Candidate Status</h2>
+                <p className="mb-4 text-xs text-gray-500">Distribution</p>
+
                 <ResponsiveContainer width="100%" height={160}>
                   <PieChart>
-                    <Pie data={analytics.statusPie} dataKey="value" innerRadius={40} outerRadius={65}>
+                    <Pie
+                      data={analytics.statusPie}
+                      dataKey="value"
+                      innerRadius={40}
+                      outerRadius={65}
+                    >
                       {analytics.statusPie.map((_, i) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
@@ -268,17 +355,15 @@ export default function Analytics() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-  
             </div>
-  
+
             {/* Charts Row 2 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* Funnel */}
-              <div className="bg-white border border-gray-200 rounded-xl p-5">
-                <h2 className="text-sm font-semibold mb-1">Hiring Funnel</h2>
-                <p className="text-xs text-gray-500 mb-4">Applicants → Shortlisted</p>
-  
+              <div className="rounded-xl border border-gray-200 bg-white p-5">
+                <h2 className="mb-1 text-sm font-semibold">Hiring Funnel</h2>
+                <p className="mb-4 text-xs text-gray-500">Applicants → Shortlisted</p>
+
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={analytics.roleDistribution} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
@@ -291,12 +376,12 @@ export default function Analytics() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-  
+
               {/* Score */}
-              <div className="bg-white border border-gray-200 rounded-xl p-5">
-                <h2 className="text-sm font-semibold mb-1">Score Distribution</h2>
-                <p className="text-xs text-gray-500 mb-4">AI score ranges</p>
-  
+              <div className="rounded-xl border border-gray-200 bg-white p-5">
+                <h2 className="mb-1 text-sm font-semibold">Score Distribution</h2>
+                <p className="mb-4 text-xs text-gray-500">AI score ranges</p>
+
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={analytics.scoreDistribution}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
@@ -307,16 +392,15 @@ export default function Analytics() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-  
             </div>
-  
+
             {/* IMPACT */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <h2 className="text-sm font-semibold mb-4">Business Impact</h2>
-  
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-xl border border-gray-200 bg-white p-6">
+              <h2 className="mb-4 text-sm font-semibold">Business Impact</h2>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {analytics.impactSummary.map((item) => (
-                  <div key={item.title} className="p-4 bg-gray-50 rounded-lg">
+                  <div key={item.title} className="rounded-lg bg-gray-50 p-4">
                     <p className="text-2xl font-bold text-teal-600">{item.value}</p>
                     <p className="text-sm font-medium">{item.title}</p>
                     <p className="text-xs text-gray-500">{item.description}</p>

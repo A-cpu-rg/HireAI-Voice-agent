@@ -1,22 +1,45 @@
-import { NextResponse } from 'next/server';
-import { BolnaService } from '@/services/bolna.service';
+import { ApiError, json, withRoute } from "@/lib/api";
+import { logger } from "@/lib/logger";
+import { verifyBolnaWebhook } from "@/lib/webhook";
+import { BolnaService } from "@/services/bolna.service";
 
 /**
- * Bolna Webhook Endpoint
- * This is a PUBLIC endpoint (no auth) that Bolna calls when a screening call finishes.
- * It delegates all DB logic to BolnaService.processWebhook for transactional safety.
+ * Public webhook Bolna calls when a screening call finishes.
+ *
+ * The raw body is read first so its HMAC signature can be verified before we
+ * trust anything in it. When `BOLNA_WEBHOOK_SECRET` is configured, an invalid
+ * or missing signature is rejected with 401; otherwise the request is processed
+ * with a loud warning (see verifyBolnaWebhook).
  */
-export async function POST(req: Request) {
-  try {
-    const payload = await req.json();
-    console.log("[Webhook] Received Bolna callback:", JSON.stringify(payload).slice(0, 200));
+export const POST = withRoute(async (req) => {
+  const rawBody = await req.text();
 
-    await BolnaService.processWebhook(payload);
+  const verification = verifyBolnaWebhook({
+    rawBody,
+    headers: req.headers,
+    url: req.url,
+  });
 
-    return new Response(null, { status: 200 });
-  } catch (error: any) {
-    console.error("Webhook error:", error.message);
-    // Always return 200 to Bolna to prevent retries on our known errors
-    return new Response(null, { status: 200 });
+  if (!verification.ok) {
+    logger.warn("Rejected unverified Bolna webhook", { reason: verification.reason });
+    throw ApiError.unauthorized("Invalid webhook signature.");
   }
-}
+
+  if (verification.mode === "unverified") {
+    logger.warn(
+      "Bolna webhook processed without verification. Set BOLNA_WEBHOOK_SECRET to secure this endpoint."
+    );
+  }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    throw ApiError.badRequest("Webhook body must be valid JSON.");
+  }
+
+  // Unexpected errors propagate to withRoute → 500, so Bolna retries and we see
+  // the failure. Known no-ops (unknown call id) return 200 to stop retries.
+  const result = await BolnaService.processWebhook(payload as never);
+  return json({ ok: result.status !== "ignored", ...result });
+});

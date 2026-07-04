@@ -4,11 +4,7 @@ import { useApp } from "@/context/AppContext";
 import { cn } from "@/utils/cn";
 import { usePathname } from "next/navigation";
 
-export default function LayoutClientWrapper({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function LayoutClientWrapper({ children }: { children: React.ReactNode }) {
   const { sidebarOpen } = useApp();
   const pathname = usePathname();
 
@@ -19,7 +15,7 @@ export default function LayoutClientWrapper({
   return (
     <main
       className={cn(
-        "transition-all duration-300 min-h-screen",
+        "min-h-screen transition-all duration-300",
         sidebarOpen ? "ml-60" : "ml-[68px]"
       )}
     >

@@ -1,12 +1,8 @@
-import { NextResponse } from "next/server";
+import { assertSameOrigin, json, withRoute } from "@/lib/api";
 import { logoutUser } from "@/lib/auth";
 
-export async function POST() {
-  try {
-    await logoutUser();
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error("Logout error:", error);
-    return NextResponse.json({ error: "Failed to log out." }, { status: 500 });
-  }
-}
+export const POST = withRoute(async (req) => {
+  assertSameOrigin(req);
+  await logoutUser();
+  return json({ ok: true });
+});
